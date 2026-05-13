@@ -1,0 +1,799 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#0E0F12" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Puzzle" />
+<title>Sliding Puzzle</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230E0F12'/><g fill='%23E8EAED' font-family='ui-monospace,SF Mono,monospace' font-weight='600' font-size='22' text-anchor='middle'><text x='20' y='28'>1</text><text x='44' y='28'>2</text><text x='20' y='52'>3</text></g></svg>" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<style>
+  :root {
+    --bg: #0E0F12;
+    --surface: #16181D;
+    --tile: #1E2128;
+    --tile-edge: rgba(255,255,255,0.06);
+    --text: #E8EAED;
+    --text-dim: rgba(232,234,237,0.45);
+    --text-faint: rgba(232,234,237,0.25);
+    --accent: #9EB8FF;
+    --success: #7CE0B3;
+    --tile-radius: 14px;
+    --board-radius: 16px;
+    --ease-spring: cubic-bezier(0.32, 0.72, 0.24, 1);
+    --slide-ms: 180ms;
+    --mono: 'SF Mono', 'JetBrains Mono', ui-monospace, 'Menlo', monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #07080A;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'system-ui', 'Segoe UI', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    overscroll-behavior: none;
+  }
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: max(env(safe-area-inset-top), 24px) 16px max(env(safe-area-inset-bottom), 24px);
+  }
+
+  .app {
+    width: 100%;
+    max-width: 390px;
+    background: var(--bg);
+    border-radius: 32px;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+    padding: 44px 16px 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .top {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 40px;
+  }
+
+  .chips {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface);
+    border-radius: 999px;
+  }
+  .chip {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--text-dim);
+    font: 600 13px/1 var(--mono);
+    padding: 8px 12px;
+    min-width: 32px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color 160ms ease, background 160ms ease;
+  }
+  .chip:hover { color: var(--text); }
+  .chip[aria-pressed="true"] {
+    background: var(--tile);
+    color: var(--text);
+  }
+
+  .mode-group {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: var(--surface);
+    border-radius: 999px;
+  }
+  .mode-btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--text-dim);
+    font: 500 12px/1 -apple-system, system-ui, sans-serif;
+    padding: 8px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: color 160ms ease, background 160ms ease;
+  }
+  .mode-btn:hover { color: var(--text); }
+  .mode-btn[aria-pressed="true"] {
+    background: var(--tile);
+    color: var(--text);
+  }
+
+  .stats {
+    display: flex;
+    gap: 48px;
+    font: 500 24px/1 var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+  .stats .label {
+    display: block;
+    font: 500 10px/1 -apple-system, system-ui, sans-serif;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .stats .value { text-align: center; }
+  .stats .value.flash { color: var(--success); transition: color 600ms ease; }
+
+  .board-wrap {
+    position: relative;
+    width: 320px;
+    max-width: 100%;
+    aspect-ratio: 1 / 1;
+  }
+  .board {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: var(--surface);
+    border-radius: var(--board-radius);
+    padding: var(--gap);
+    --gap: 8px;
+    transition: transform 500ms var(--ease-spring), box-shadow 400ms ease;
+  }
+  .board.complete {
+    box-shadow: 0 0 0 1px var(--accent), 0 0 40px -10px var(--accent);
+  }
+  .board.pulse { transform: scale(1.02); }
+
+  .tile {
+    position: absolute;
+    background: var(--tile);
+    border: 1px solid var(--tile-edge);
+    border-radius: var(--tile-radius);
+    color: var(--text);
+    font-family: var(--mono);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition:
+      transform var(--slide-ms) var(--ease-spring),
+      background 200ms ease,
+      border-color 300ms ease,
+      opacity 200ms ease;
+    will-change: transform;
+    touch-action: none;
+    padding: 0;
+  }
+  .tile:active { transform: var(--pos) scale(0.97); transition-duration: 80ms; }
+  .tile.complete { border-color: var(--accent); }
+
+  .tile .num {
+    position: relative;
+    z-index: 1;
+  }
+  .tile.has-art .num {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    font-size: 10px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .tile .art {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-size: var(--art-size) var(--art-size);
+    background-position: var(--art-pos);
+    background-repeat: no-repeat;
+  }
+
+  .bottom {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    margin-top: 4px;
+  }
+
+  .new-game {
+    appearance: none;
+    border: 0;
+    background: var(--tile);
+    color: var(--text);
+    font: 500 14px/1 -apple-system, system-ui, sans-serif;
+    padding: 14px 28px;
+    border-radius: 999px;
+    cursor: pointer;
+    box-shadow: inset 0 0 0 1px var(--tile-edge);
+    transition: transform 100ms ease, background 200ms ease;
+  }
+  .new-game:hover { background: #232730; }
+  .new-game:active { transform: scale(0.97); }
+
+  .best {
+    font: 500 11px/1 var(--mono);
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .best .new {
+    color: var(--success);
+    margin-left: 8px;
+  }
+
+  .shuffling .tile { pointer-events: none; }
+  .tile.phantom {
+    pointer-events: none;
+    cursor: default;
+    transition: opacity 500ms ease 100ms, box-shadow 400ms ease 500ms;
+  }
+
+  @media (max-width: 380px) {
+    .stats { gap: 24px; font-size: 22px; }
+    .chip { padding: 7px 10px; font-size: 12px; }
+    .mode-btn { padding: 7px 10px; font-size: 11px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .tile, .board { transition-duration: 0ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="chips" role="group" aria-label="난이도">
+        <button class="chip" data-size="3" aria-pressed="false">3</button>
+        <button class="chip" data-size="4" aria-pressed="true">4</button>
+        <button class="chip" data-size="5" aria-pressed="false">5</button>
+      </div>
+      <div class="mode-group" role="group" aria-label="모드">
+        <button class="mode-btn" data-mode="numbers" aria-pressed="true">숫자</button>
+        <button class="mode-btn" data-mode="gradient" aria-pressed="false">그라디언트</button>
+        <button class="mode-btn" data-mode="pattern" aria-pressed="false">패턴</button>
+      </div>
+    </header>
+
+    <div class="stats" aria-live="polite">
+      <div><span class="label">time</span><span class="value" id="time">00:00</span></div>
+      <div><span class="label">moves</span><span class="value" id="moves">0</span></div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board" role="application" aria-label="슬라이딩 퍼즐"></div>
+    </div>
+
+    <div class="bottom">
+      <button class="new-game" id="newGame">↻ 새 게임</button>
+      <div class="best" id="best">best · — · —</div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+
+  const LS_KEY = 'sliding_puzzle_v1';
+  const SIZES = [3, 4, 5];
+  const MODES = ['numbers', 'gradient', 'pattern'];
+
+  // Gradient mode is rendered as a solid-color mosaic:
+  // each tile is a single color sampled along the diagonal of (from → to).
+  const GRADIENTS = [
+    { from: '#4F46E5', to: '#EC4899' },
+    { from: '#06B6D4', to: '#8B5CF6' },
+    { from: '#F59E0B', to: '#EF4444' },
+    { from: '#10B981', to: '#3B82F6' },
+  ];
+
+  function hexToRgb(hex) {
+    const m = hex.replace('#', '');
+    return [parseInt(m.slice(0, 2), 16), parseInt(m.slice(2, 4), 16), parseInt(m.slice(4, 6), 16)];
+  }
+  function rgbToHex(r, g, b) {
+    const h = (n) => Math.round(n).toString(16).padStart(2, '0');
+    return `#${h(r)}${h(g)}${h(b)}`;
+  }
+  function lerpColor(a, b, t) {
+    const [r1, g1, b1] = hexToRgb(a);
+    const [r2, g2, b2] = hexToRgb(b);
+    return rgbToHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
+  }
+  function gradientColorAt(pair, col, row) {
+    const denom = Math.max(1, 2 * (size - 1));
+    const t = (col + row) / denom;
+    return lerpColor(pair.from, pair.to, t);
+  }
+
+  // SVG patterns as data URLs (rendered onto tiles in pattern mode)
+  const PATTERNS = [
+    // diagonal lines
+    `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%239EB8FF'/><stop offset='1' stop-color='%23EC4899'/></linearGradient><pattern id='p' width='20' height='20' patternUnits='userSpaceOnUse' patternTransform='rotate(45)'><line x1='0' y1='0' x2='0' y2='20' stroke='url(%23g)' stroke-width='8' opacity='0.55'/></pattern></defs><rect width='400' height='400' fill='%231E2128'/><rect width='400' height='400' fill='url(%23p)'/></svg>`,
+    // concentric circles
+    `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><rect width='400' height='400' fill='%231E2128'/><g fill='none' stroke='%237CE0B3' stroke-width='3' opacity='0.55'><circle cx='200' cy='200' r='40'/><circle cx='200' cy='200' r='80'/><circle cx='200' cy='200' r='120'/><circle cx='200' cy='200' r='160'/></g></svg>`,
+    // dots grid
+    `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><rect width='400' height='400' fill='%231E2128'/><defs><pattern id='d' width='32' height='32' patternUnits='userSpaceOnUse'><circle cx='16' cy='16' r='5' fill='%239EB8FF' opacity='0.6'/></pattern></defs><rect width='400' height='400' fill='url(%23d)'/></svg>`,
+  ];
+
+  // --- State ---
+  let size = 4;
+  let mode = 'numbers';
+  let tiles = [];        // index = current position; value = tile value (1..N*N-1, or 0 for empty)
+  let order = new Map(); // value -> {row, col}
+  let emptyPos = 0;
+  let moves = 0;
+  let startTs = null;
+  let timerHandle = null;
+  let won = false;
+  let lockInput = false;
+  let currentArt = null; // selected gradient/pattern for this round
+
+  const boardEl = document.getElementById('board');
+  const timeEl = document.getElementById('time');
+  const movesEl = document.getElementById('moves');
+  const bestEl = document.getElementById('best');
+  const newGameBtn = document.getElementById('newGame');
+
+  // --- LocalStorage ---
+  function loadLS() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return { v: 1, best: {}, lastDifficulty: 4, lastMode: 'numbers' };
+      const obj = JSON.parse(raw);
+      if (!obj || obj.v !== 1) return { v: 1, best: {}, lastDifficulty: 4, lastMode: 'numbers' };
+      return obj;
+    } catch (e) {
+      return { v: 1, best: {}, lastDifficulty: 4, lastMode: 'numbers' };
+    }
+  }
+  function saveLS(s) {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) {}
+  }
+  function bestKey() { return `${size}:${mode}`; }
+  function getBest() {
+    const s = loadLS();
+    return s.best[bestKey()] || null;
+  }
+  function setBestIfBetter(timeMs, moves) {
+    const s = loadLS();
+    const k = bestKey();
+    const prev = s.best[k];
+    let isNew = false;
+    if (!prev || timeMs < prev.timeMs) {
+      s.best[k] = { timeMs, moves };
+      isNew = true;
+    }
+    s.lastDifficulty = size;
+    s.lastMode = mode;
+    saveLS(s);
+    return isNew;
+  }
+  function rememberSelection() {
+    const s = loadLS();
+    s.lastDifficulty = size;
+    s.lastMode = mode;
+    saveLS(s);
+  }
+
+  // --- Format ---
+  function fmtTime(ms) {
+    const sec = Math.floor(ms / 1000);
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+  function renderBest(flashNew = false) {
+    const b = getBest();
+    if (!b) {
+      bestEl.innerHTML = 'best · — · —';
+    } else {
+      bestEl.innerHTML = `best · ${fmtTime(b.timeMs)} · ${b.moves} moves` +
+        (flashNew ? ` <span class="new">new!</span>` : '');
+    }
+  }
+
+  // --- Board geometry ---
+  function tileSize() {
+    const gap = 8;
+    const boardPx = boardEl.clientWidth;
+    return (boardPx - gap * (size + 1)) / size;
+  }
+  function tilePos(row, col) {
+    const gap = 8;
+    const ts = tileSize();
+    const x = gap + col * (ts + gap);
+    const y = gap + row * (ts + gap);
+    return { x, y, ts };
+  }
+  function posToRC(pos) {
+    return { row: Math.floor(pos / size), col: pos % size };
+  }
+  function rcToPos(row, col) { return row * size + col; }
+
+  // --- Build tiles DOM ---
+  function buildTiles() {
+    boardEl.innerHTML = '';
+    boardEl.style.setProperty('--gap', '8px');
+    tiles = [];
+    order = new Map();
+    won = false;
+    boardEl.classList.remove('complete', 'pulse');
+
+    // pick art for this round
+    if (mode === 'gradient') {
+      currentArt = GRADIENTS[Math.floor(Math.random() * GRADIENTS.length)];
+    } else if (mode === 'pattern') {
+      currentArt = PATTERNS[Math.floor(Math.random() * PATTERNS.length)];
+    } else {
+      currentArt = null;
+    }
+
+    const N = size * size;
+    for (let i = 0; i < N - 1; i++) {
+      const val = i + 1;
+      const row = Math.floor(i / size);
+      const col = i % size;
+      tiles[i] = val;
+      order.set(val, { row, col });
+
+      const el = document.createElement('button');
+      el.className = 'tile';
+      el.dataset.value = String(val);
+      el.setAttribute('aria-label', `타일 ${val}`);
+      const num = document.createElement('span');
+      num.className = 'num';
+      num.textContent = val;
+      el.appendChild(num);
+
+      if (mode === 'gradient' || mode === 'pattern') {
+        el.classList.add('has-art');
+        const art = document.createElement('span');
+        art.className = 'art';
+        if (mode === 'gradient') {
+          const targetRow = Math.floor((val - 1) / size);
+          const targetCol = (val - 1) % size;
+          art.style.background = gradientColorAt(currentArt, targetCol, targetRow);
+        } else {
+          art.style.backgroundImage = `url("${currentArt}")`;
+        }
+        el.appendChild(art);
+      }
+      el.addEventListener('click', () => tryTapTile(val));
+      boardEl.appendChild(el);
+    }
+    tiles[N - 1] = 0;
+    emptyPos = N - 1;
+    layout();
+    sizeFonts();
+  }
+
+  function sizeFonts() {
+    const ts = tileSize();
+    const fs = Math.max(14, ts * 0.32);
+    boardEl.querySelectorAll('.tile').forEach(el => {
+      el.style.fontSize = `${fs}px`;
+    });
+  }
+
+  // --- Layout (position all tiles) ---
+  function layout(animate = true) {
+    const ts = tileSize();
+    const gap = 8;
+    const totalW = ts * size + gap * (size - 1);
+    for (let val of order.keys()) {
+      const { row, col } = order.get(val);
+      const { x, y } = tilePos(row, col);
+      const el = boardEl.querySelector(`.tile[data-value="${val}"]`);
+      if (!el) continue;
+      el.style.width = `${ts}px`;
+      el.style.height = `${ts}px`;
+      el.style.setProperty('--pos', `translate(${x}px, ${y}px)`);
+      el.style.transform = `translate(${x}px, ${y}px)`;
+      if (mode === 'pattern') {
+        // pattern slice corresponds to the tile's TARGET position (puzzle to reassemble)
+        const targetRow = Math.floor((val - 1) / size);
+        const targetCol = (val - 1) % size;
+        const art = el.querySelector('.art');
+        if (art) {
+          art.style.backgroundSize = `${totalW}px ${totalW}px`;
+          art.style.backgroundPosition = `-${targetCol * (ts + gap)}px -${targetRow * (ts + gap)}px`;
+        }
+      }
+    }
+    if (!animate) {
+      // force no-anim reflow
+      boardEl.querySelectorAll('.tile').forEach(el => {
+        el.style.transition = 'none';
+        // eslint-disable-next-line no-unused-expressions
+        el.offsetHeight;
+        el.style.transition = '';
+      });
+    }
+  }
+
+  // --- Movement ---
+  function neighborsOf(pos) {
+    const { row, col } = posToRC(pos);
+    const out = [];
+    if (row > 0) out.push(rcToPos(row - 1, col));
+    if (row < size - 1) out.push(rcToPos(row + 1, col));
+    if (col > 0) out.push(rcToPos(row, col - 1));
+    if (col < size - 1) out.push(rcToPos(row, col + 1));
+    return out;
+  }
+  function isAdjacentToEmpty(pos) {
+    return neighborsOf(emptyPos).includes(pos);
+  }
+  function findPosOfValue(val) {
+    return tiles.indexOf(val);
+  }
+
+  function applyMove(tilePos_) {
+    // swap tile at tilePos_ with empty
+    const val = tiles[tilePos_];
+    tiles[emptyPos] = val;
+    tiles[tilePos_] = 0;
+    const newRC = posToRC(emptyPos);
+    emptyPos = tilePos_;
+    order.set(val, newRC);
+  }
+
+  function tryTapTile(val) {
+    if (lockInput || won) return;
+    const pos = findPosOfValue(val);
+    if (!isAdjacentToEmpty(pos)) return;
+    doMove(pos);
+  }
+
+  function doMove(pos) {
+    applyMove(pos);
+    if (startTs === null) startTimer();
+    moves++;
+    movesEl.textContent = moves;
+    layout(true);
+    if (isSolved()) {
+      onSolved();
+    }
+  }
+
+  function tryMoveByDirection(dir) {
+    // dir from user perspective: arrow up = empty moves up = tile from below moves up into empty
+    // We treat: pressing arrow key moves the tile that is on the OPPOSITE side of empty.
+    // i.e. arrow up → bring tile that's below empty UP into empty.
+    if (lockInput || won) return;
+    const { row, col } = posToRC(emptyPos);
+    let target = -1;
+    if (dir === 'up' && row < size - 1) target = rcToPos(row + 1, col);
+    if (dir === 'down' && row > 0) target = rcToPos(row - 1, col);
+    if (dir === 'left' && col < size - 1) target = rcToPos(row, col + 1);
+    if (dir === 'right' && col > 0) target = rcToPos(row, col - 1);
+    if (target >= 0) doMove(target);
+  }
+
+  function isSolved() {
+    const N = size * size;
+    for (let i = 0; i < N - 1; i++) {
+      if (tiles[i] !== i + 1) return false;
+    }
+    return true;
+  }
+
+  // --- Shuffle (always solvable by construction) ---
+  async function shuffle() {
+    lockInput = true;
+    boardEl.classList.add('shuffling');
+    // reset state
+    buildTiles();
+    moves = 0;
+    movesEl.textContent = '0';
+    startTs = null;
+    timeEl.textContent = '00:00';
+    timeEl.classList.remove('flash');
+    won = false;
+
+    // do random legal moves
+    const steps = Math.max(60, size * size * 8);
+    let prevPos = -1;
+    for (let i = 0; i < steps; i++) {
+      const neigh = neighborsOf(emptyPos).filter(p => p !== prevPos);
+      const pick = neigh[Math.floor(Math.random() * neigh.length)];
+      prevPos = emptyPos;
+      applyMove(pick);
+    }
+    // ensure not already solved
+    if (isSolved()) {
+      const neigh = neighborsOf(emptyPos);
+      applyMove(neigh[0]);
+    }
+    layout(false);
+    // small visual settle delay
+    await sleep(50);
+    lockInput = false;
+    boardEl.classList.remove('shuffling');
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // --- Timer ---
+  function startTimer() {
+    startTs = performance.now();
+    timerHandle = setInterval(tickTimer, 200);
+  }
+  function stopTimer() {
+    if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+  }
+  function tickTimer() {
+    if (startTs === null) return;
+    const ms = performance.now() - startTs;
+    timeEl.textContent = fmtTime(ms);
+  }
+  function elapsedMs() {
+    if (startTs === null) return 0;
+    return performance.now() - startTs;
+  }
+
+  function revealPhantomTile() {
+    const lastPos = size * size - 1;
+    const { row, col } = posToRC(lastPos);
+    const { x, y, ts } = tilePos(row, col);
+    const gap = 8;
+    const totalW = ts * size + gap * (size - 1);
+    const phantom = document.createElement('div');
+    phantom.className = 'tile phantom has-art complete';
+    phantom.style.width = `${ts}px`;
+    phantom.style.height = `${ts}px`;
+    phantom.style.transform = `translate(${x}px, ${y}px)`;
+    phantom.style.opacity = '0';
+    const art = document.createElement('span');
+    art.className = 'art';
+    if (mode === 'gradient') {
+      art.style.background = gradientColorAt(currentArt, col, row);
+    } else {
+      art.style.backgroundImage = `url("${currentArt}")`;
+      art.style.backgroundSize = `${totalW}px ${totalW}px`;
+      art.style.backgroundPosition = `-${col * (ts + gap)}px -${row * (ts + gap)}px`;
+    }
+    phantom.appendChild(art);
+    boardEl.appendChild(phantom);
+    requestAnimationFrame(() => { phantom.style.opacity = '1'; });
+  }
+
+  // --- Solved ---
+  function onSolved() {
+    won = true;
+    lockInput = true;
+    stopTimer();
+    const total = elapsedMs();
+    timeEl.textContent = fmtTime(total);
+
+    boardEl.classList.add('complete');
+    requestAnimationFrame(() => boardEl.classList.add('pulse'));
+    setTimeout(() => boardEl.classList.remove('pulse'), 520);
+    boardEl.querySelectorAll('.tile').forEach(el => el.classList.add('complete'));
+
+    if (mode === 'gradient' || mode === 'pattern') revealPhantomTile();
+
+    const isNew = setBestIfBetter(Math.round(total), moves);
+    if (isNew) {
+      timeEl.classList.add('flash');
+      renderBest(true);
+    } else {
+      renderBest(false);
+    }
+    setTimeout(() => { lockInput = false; }, 600);
+  }
+
+  // --- Controls ---
+  function setSize(n) {
+    if (size === n) return;
+    size = n;
+    document.querySelectorAll('.chip').forEach(c => {
+      c.setAttribute('aria-pressed', String(Number(c.dataset.size) === size));
+    });
+    rememberSelection();
+    renderBest();
+    shuffle();
+  }
+  function setMode(m) {
+    if (mode === m) return;
+    mode = m;
+    document.querySelectorAll('.mode-btn').forEach(b => {
+      b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+    });
+    rememberSelection();
+    renderBest();
+    shuffle();
+  }
+
+  document.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => setSize(Number(c.dataset.size)));
+  });
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.addEventListener('click', () => setMode(b.dataset.mode));
+  });
+  newGameBtn.addEventListener('click', () => shuffle());
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+    if (map[e.key]) { e.preventDefault(); tryMoveByDirection(map[e.key]); }
+  });
+
+  // Swipe on board (anywhere)
+  let touchStart = null;
+  boardEl.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    touchStart = { x: e.clientX, y: e.clientY };
+  });
+  boardEl.addEventListener('pointerup', (e) => {
+    if (e.pointerType !== 'touch' || !touchStart) return;
+    const dx = e.clientX - touchStart.x;
+    const dy = e.clientY - touchStart.y;
+    const ax = Math.abs(dx), ay = Math.abs(dy);
+    const threshold = 24;
+    if (Math.max(ax, ay) < threshold) { touchStart = null; return; }
+    let dir;
+    if (ax > ay) dir = dx > 0 ? 'right' : 'left';
+    else dir = dy > 0 ? 'down' : 'up';
+    tryMoveByDirection(dir);
+    touchStart = null;
+  });
+
+  // Resize
+  let resizeRaf = null;
+  window.addEventListener('resize', () => {
+    if (resizeRaf) cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => {
+      sizeFonts();
+      layout(false);
+    });
+  });
+
+  // --- Init ---
+  function init() {
+    const s = loadLS();
+    size = SIZES.includes(s.lastDifficulty) ? s.lastDifficulty : 4;
+    mode = MODES.includes(s.lastMode) ? s.lastMode : 'numbers';
+    document.querySelectorAll('.chip').forEach(c => {
+      c.setAttribute('aria-pressed', String(Number(c.dataset.size) === size));
+    });
+    document.querySelectorAll('.mode-btn').forEach(b => {
+      b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+    });
+    renderBest();
+    shuffle();
+  }
+
+  // Wait for board to have a real size
+  window.addEventListener('load', init);
+
+  // Service worker registration (optional; works on https or localhost)
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    // No external SW file shipped in v1; intentionally skipped to keep zero-maintenance.
+  }
+})();
+</script>
+</body>
+</html>
