@@ -861,6 +861,25 @@
       sizeFonts(); layoutSolved(winBoardEl);
       makeConfetti();
       show(winScreen);
+
+      // Image mode reveal: place the full photo on the board, then fade tiles out
+      // so the 9 slices vanish and a seamless picture remains.
+      if (imageMode && currentImage) {
+        winBoardEl.style.backgroundImage = `url("${currentImage}")`;
+        winBoardEl.style.backgroundSize = 'cover';
+        winBoardEl.style.backgroundPosition = 'center';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          winBoardEl.querySelectorAll('.tile').forEach(tile => {
+            tile.style.transition = 'opacity 700ms ease-out 250ms';
+            tile.style.opacity = '0';
+          });
+        }));
+      } else {
+        winBoardEl.style.backgroundImage = '';
+        winBoardEl.style.backgroundSize = '';
+        winBoardEl.style.backgroundPosition = '';
+      }
+
       lockInput = false;
     }, 300);
   }
