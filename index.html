@@ -378,7 +378,7 @@
   .tool-btn:disabled { opacity: .38; cursor:default; }
   .badge { position:absolute; right:-5px; top:-7px; min-width:21px; height:21px; padding:0 6px; border-radius:999px; display:grid; place-items:center; background: var(--blue); color:white; font-size:12px; font-weight:850; box-shadow:0 6px 14px rgba(24,119,255,.30); }
 
-  .win-head { text-align:center; padding: 50px 0 26px; position:relative; }
+  .win-head { text-align:center; padding: 56px 0 28px; position:relative; }
   .win-head h2 { margin:0 0 12px; color: var(--blue); font-size: clamp(22px, 7vw, 30px); font-weight:900; letter-spacing:-.02em; }
   .win-head p { margin:0; font-size: clamp(15px, 4.6vw, 20px); font-weight:850; color:#1f314d; }
   .win-head p span { color:#93a0b2; padding: 0 12px; }
@@ -831,6 +831,21 @@
       home.textContent = '메인으로';
     }
   }
+  function alignWinBoardToPlay() {
+    if (!boardEl.clientWidth) return;
+    const playBoardTop = boardEl.getBoundingClientRect().top;
+    const winScreenEl = $('winScreen');
+    const screenPadTop = parseFloat(getComputedStyle(winScreenEl).paddingTop) || 0;
+    const winHead = winScreenEl.querySelector('.win-head');
+    if (!winHead) return;
+    const headHeight = Math.max(0, playBoardTop - screenPadTop);
+    winHead.style.height = `${headHeight}px`;
+    winHead.style.padding = '0';
+    winHead.style.display = 'flex';
+    winHead.style.flexDirection = 'column';
+    winHead.style.alignItems = 'center';
+    winHead.style.justifyContent = 'center';
+  }
   function onSolved() {
     won = true; lockInput = true; updateUndo(); stopTimer();
     const total = Math.round(elapsedMs());
@@ -840,6 +855,7 @@
     $('winTime').textContent = fmtTime(total);
     $('winMoves').textContent = `${moves} 이동`;
     configureWinActions();
+    alignWinBoardToPlay();
     setTimeout(() => {
       buildTiles(winBoardEl, true);
       sizeFonts(); layoutSolved(winBoardEl);
