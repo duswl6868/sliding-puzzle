@@ -34,7 +34,7 @@
     --radius-md: 16px;
     --ease: cubic-bezier(.22,.9,.2,1);
     --spring: cubic-bezier(.18,.78,.28,1.06);
-    --slide-ms: 290ms;
+    --slide-ms: 140ms;
     --slide-delay: 32ms;
     --font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
   }
@@ -315,7 +315,7 @@
     backdrop-filter: blur(18px) saturate(150%);
     -webkit-backdrop-filter: blur(18px) saturate(150%);
     transition:
-      transform var(--slide-ms) var(--spring),
+      transform var(--slide-ms) linear,
       background 260ms ease,
       box-shadow 260ms ease,
       color 260ms ease,
@@ -378,8 +378,8 @@
   .tool-btn:disabled { opacity: .38; cursor:default; }
   .badge { position:absolute; right:-5px; top:-7px; min-width:21px; height:21px; padding:0 6px; border-radius:999px; display:grid; place-items:center; background: var(--blue); color:white; font-size:12px; font-weight:850; box-shadow:0 6px 14px rgba(24,119,255,.30); }
 
-  .win-head { text-align:center; padding: 70px 0 28px; position:relative; }
-  .win-head h2 { margin:0 0 14px; color: var(--blue); font-size: clamp(22px, 7vw, 30px); font-weight:900; letter-spacing:-.02em; }
+  .win-head { text-align:center; padding: 50px 0 26px; position:relative; }
+  .win-head h2 { margin:0 0 12px; color: var(--blue); font-size: clamp(22px, 7vw, 30px); font-weight:900; letter-spacing:-.02em; }
   .win-head p { margin:0; font-size: clamp(15px, 4.6vw, 20px); font-weight:850; color:#1f314d; }
   .win-head p span { color:#93a0b2; padding: 0 12px; }
   .win-actions { padding: 44px 2px 0; display:flex; flex-direction:column; gap:22px; }
@@ -805,9 +805,16 @@
   function spawnTiles() {
     boardEl.querySelectorAll('.tile').forEach((el, i) => {
       el.classList.remove('spawn');
-      el.style.animationDelay = `${Math.min(i * 18, 180)}ms`;
+      const delay = Math.min(i * 18, 180);
+      el.style.animationDelay = `${delay}ms`;
       void el.offsetWidth;
       el.classList.add('spawn');
+      // Remove .spawn after animation finishes so its fill-mode doesn't lock the
+      // transform value (which would block subsequent CSS transitions on user moves).
+      setTimeout(() => {
+        el.classList.remove('spawn');
+        el.style.animationDelay = '';
+      }, 460 + delay + 40);
     });
   }
   function configureWinActions() {
