@@ -3,15 +3,21 @@
   "short_name": "Puzzle",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#0E0F12",
-  "theme_color": "#0E0F12",
+  "background_color": "#F3F6FB",
+  "theme_color": "#F3F6FB",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='112' fill='%230E0F12'/><g fill='%23E8EAED' font-family='ui-monospace,SF Mono,monospace' font-weight='600' font-size='180' text-anchor='middle'><text x='160' y='230'>1</text><text x='352' y='230'>2</text><text x='160' y='420'>3</text></g></svg>",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
