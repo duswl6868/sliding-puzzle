@@ -3,537 +3,619 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<meta name="theme-color" content="#0E0F12" />
+<meta name="theme-color" content="#F3F6FB" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="Puzzle" />
-<title>Sliding Puzzle</title>
+<title>슬라이딩 퍼즐 - Glass</title>
 <link rel="manifest" href="manifest.webmanifest" />
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%230E0F12'/><g fill='%23E8EAED' font-family='ui-monospace,SF Mono,monospace' font-weight='600' font-size='22' text-anchor='middle'><text x='20' y='28'>1</text><text x='44' y='28'>2</text><text x='20' y='52'>3</text></g></svg>" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='18' fill='%23F3F6FB'/><rect x='10' y='10' width='20' height='20' rx='5' fill='%23fff' opacity='.82'/><rect x='34' y='10' width='20' height='20' rx='5' fill='%23fff' opacity='.82'/><rect x='10' y='34' width='20' height='20' rx='5' fill='%23fff' opacity='.82'/><rect x='34' y='34' width='20' height='20' rx='5' fill='%231875FF'/></svg>" />
 <style>
   :root {
-    --bg: #0E0F12;
-    --surface: #16181D;
-    --tile: #1E2128;
-    --tile-edge: rgba(255,255,255,0.06);
-    --text: #E8EAED;
-    --text-dim: rgba(232,234,237,0.45);
-    --text-faint: rgba(232,234,237,0.25);
-    --accent: #9EB8FF;
-    --success: #7CE0B3;
-    --tile-radius: 14px;
-    --board-radius: 16px;
-    --ease-spring: cubic-bezier(0.32, 0.72, 0.24, 1);
-    --slide-ms: 180ms;
-    --mono: 'SF Mono', 'JetBrains Mono', ui-monospace, 'Menlo', monospace;
+    --bg0: #f7f9fd;
+    --bg1: #eef3fa;
+    --ink: #1f314d;
+    --ink-soft: #40516b;
+    --muted: #7b899c;
+    --faint: #a3afbf;
+    --line: rgba(170, 184, 205, .28);
+    --glass: rgba(255,255,255,.58);
+    --glass-strong: rgba(255,255,255,.74);
+    --glass-soft: rgba(255,255,255,.38);
+    --empty: rgba(211, 224, 240, .58);
+    --blue: #1877ff;
+    --blue2: #4ba0ff;
+    --blue-soft: rgba(24,119,255,.16);
+    --blue-mid: rgba(24,119,255,.34);
+    --radius-xl: 24px;
+    --radius-lg: 20px;
+    --radius-md: 16px;
+    --ease: cubic-bezier(.22,.9,.2,1);
+    --spring: cubic-bezier(.32,.72,.24,1);
+    --slide-ms: 190ms;
+    --font: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', system-ui, sans-serif;
   }
 
   * { box-sizing: border-box; }
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: #07080A;
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'system-ui', 'Segoe UI', sans-serif;
+  html, body { margin: 0; min-height: 100%; }
+  html { background: var(--bg0); }
+  body {
+    color: var(--ink);
+    font-family: var(--font);
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
     -webkit-user-select: none;
-    overscroll-behavior: none;
-  }
-  body {
+    overflow-x: hidden;
     min-height: 100vh;
     min-height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: max(env(safe-area-inset-top), 24px) 16px max(env(safe-area-inset-bottom), 24px);
+    background:
+      radial-gradient(circle at 16% 10%, rgba(255,255,255,.98) 0 18%, transparent 42%),
+      radial-gradient(circle at 84% 4%, rgba(255,255,255,.90) 0 14%, transparent 36%),
+      radial-gradient(circle at 68% 86%, rgba(203,225,255,.44) 0 13%, transparent 38%),
+      linear-gradient(145deg, #f8fbff 0%, #eef3fa 48%, #f7faff 100%);
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: .42;
+    background-image:
+      linear-gradient(rgba(255,255,255,.45) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.35) 1px, transparent 1px);
+    background-size: 34px 34px;
+    mask-image: radial-gradient(circle at 50% 30%, black, transparent 72%);
   }
 
-  .app {
-    width: 100%;
-    max-width: 390px;
-    background: var(--bg);
-    border-radius: 32px;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
-    padding: 44px 16px 32px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
+  button { font: inherit; color: inherit; }
+  .screen {
+    width: min(100%, 430px);
+    min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: max(env(safe-area-inset-top), 18px) 20px max(env(safe-area-inset-bottom), 18px);
+    display: none;
+    position: relative;
   }
+  .screen.active { display: flex; flex-direction: column; }
 
-  .top {
-    width: 100%;
+  .statusbar {
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 40px;
+    padding: 0 12px;
+    color: #05070b;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -.02em;
   }
+  .status-icons { display: flex; gap: 5px; align-items: center; }
+  .signal { display:flex; gap:2px; align-items:flex-end; height:12px; }
+  .signal span { width:3px; border-radius:2px; background:#05070b; display:block; }
+  .signal span:nth-child(1){height:4px}.signal span:nth-child(2){height:6px}.signal span:nth-child(3){height:9px}.signal span:nth-child(4){height:11px}
+  .wifi { width: 14px; height: 10px; position: relative; overflow: hidden; }
+  .wifi::before { content:""; position:absolute; left:1px; top:0; width:12px; height:12px; border:2px solid #05070b; border-color:#05070b transparent transparent transparent; border-radius:50%; transform: rotate(45deg); }
+  .battery { width: 20px; height: 10px; border: 2px solid #05070b; border-radius: 3px; position:relative; }
+  .battery::before { content:""; position:absolute; right:-4px; top:2px; width:2px; height:4px; background:#05070b; border-radius:1px; }
+  .battery::after { content:""; position:absolute; left:2px; top:2px; width:12px; height:2px; background:#05070b; border-radius:2px; }
 
-  .chips {
-    display: inline-flex;
-    gap: 4px;
-    padding: 4px;
-    background: var(--surface);
-    border-radius: 999px;
-  }
-  .chip {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    color: var(--text-dim);
-    font: 600 13px/1 var(--mono);
-    padding: 8px 12px;
-    min-width: 32px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: color 160ms ease, background 160ms ease;
-  }
-  .chip:hover { color: var(--text); }
-  .chip[aria-pressed="true"] {
-    background: var(--tile);
-    color: var(--text);
-  }
-
-  .mode-group {
-    display: inline-flex;
-    gap: 4px;
-    padding: 4px;
-    background: var(--surface);
-    border-radius: 999px;
-  }
-  .mode-btn {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    color: var(--text-dim);
-    font: 500 12px/1 -apple-system, system-ui, sans-serif;
-    padding: 8px 12px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: color 160ms ease, background 160ms ease;
-  }
-  .mode-btn:hover { color: var(--text); }
-  .mode-btn[aria-pressed="true"] {
-    background: var(--tile);
-    color: var(--text);
-  }
-
-  .stats {
-    display: flex;
-    gap: 48px;
-    font: 500 24px/1 var(--mono);
-    font-variant-numeric: tabular-nums;
-    color: var(--text);
-  }
-  .stats .label {
-    display: block;
-    font: 500 10px/1 -apple-system, system-ui, sans-serif;
-    color: var(--text-faint);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-bottom: 6px;
-    text-align: center;
-  }
-  .stats .value { text-align: center; }
-  .stats .value.flash { color: var(--success); transition: color 600ms ease; }
-
-  .board-wrap {
-    position: relative;
-    width: 320px;
-    max-width: 100%;
-    aspect-ratio: 1 / 1;
-  }
-  .board {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background: var(--surface);
-    border-radius: var(--board-radius);
-    padding: var(--gap);
-    --gap: 8px;
-    transition: transform 500ms var(--ease-spring), box-shadow 400ms ease;
-  }
-  .board.complete {
-    box-shadow: 0 0 0 1px var(--accent), 0 0 40px -10px var(--accent);
-  }
-  .board.pulse { transform: scale(1.02); }
-
-  .tile {
-    position: absolute;
-    background: var(--tile);
-    border: 1px solid var(--tile-edge);
-    border-radius: var(--tile-radius);
-    color: var(--text);
-    font-family: var(--mono);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    display: flex;
+  .topbar {
+    height: 54px;
+    display: grid;
+    grid-template-columns: 48px 1fr 48px;
     align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition:
-      transform var(--slide-ms) var(--ease-spring),
-      background 200ms ease,
-      border-color 300ms ease,
-      opacity 200ms ease;
-    will-change: transform;
-    touch-action: none;
-    padding: 0;
   }
-  .tile:active { transform: var(--pos) scale(0.97); transition-duration: 80ms; }
-  .tile.complete { border-color: var(--accent); }
+  .topbar > .icon-btn:first-child  { justify-self: start; }
+  .topbar > .icon-btn:last-child   { justify-self: end; }
+  .icon-btn {
+    width: 44px; height: 44px; border: 0; background: transparent; border-radius: 16px;
+    display: grid; place-items: center; color: var(--ink); cursor: pointer;
+    transition: transform 100ms ease, background 160ms ease;
+  }
+  .icon-btn:active { transform: scale(.92); }
+  .icon-btn:hover { background: rgba(255,255,255,.48); }
+  .icon-btn svg { width: 23px; height: 23px; overflow: visible; }
+  .center-title { justify-self:center; display:flex; gap: 7px; align-items:center; font-size: 21px; font-weight: 800; letter-spacing: .04em; }
+  .center-title button { border: 0; background: transparent; padding: 0; display:flex; align-items:center; gap:7px; cursor:pointer; }
+  .center-title svg { width: 16px; height: 16px; opacity: .82; }
 
-  .tile .num {
-    position: relative;
-    z-index: 1;
-  }
-  .tile.has-art .num {
-    position: absolute;
-    top: 8px;
-    right: 10px;
-    font-size: 10px;
-    color: var(--text-dim);
-    font-weight: 500;
-  }
-  .tile .art {
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background-size: var(--art-size) var(--art-size);
-    background-position: var(--art-pos);
-    background-repeat: no-repeat;
-  }
+  .home-top { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-bottom: 20px; }
+  .hero { text-align: center; margin: 42px 0 52px; }
+  .hero h1 { margin: 0 0 14px; font-size: 30px; line-height: 1.12; letter-spacing: -.045em; font-weight: 850; }
+  .hero p { margin: 0; color: var(--ink-soft); font-size: 16px; font-weight: 500; letter-spacing: -.025em; }
 
-  .bottom {
-    width: 100%;
+  .glass-card {
+    background: linear-gradient(145deg, rgba(255,255,255,.76), rgba(255,255,255,.42));
+    border: 1px solid rgba(255,255,255,.72);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.92),
+      inset 0 -1px 0 rgba(195,208,226,.18),
+      0 16px 36px rgba(35,55,90,.09);
+    backdrop-filter: blur(22px) saturate(150%);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+  }
+  .difficulty-list {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 16px;
-    margin-top: 4px;
+    gap: 18px;
+    padding: 0 2px;
   }
-
-  .new-game {
-    appearance: none;
+  .difficulty-card {
+    min-height: 124px;
+    width: 100%;
     border: 0;
-    background: var(--tile);
-    color: var(--text);
-    font: 500 14px/1 -apple-system, system-ui, sans-serif;
-    padding: 14px 28px;
-    border-radius: 999px;
+    border-radius: 18px;
+    padding: 0 22px 0 31px;
     cursor: pointer;
-    box-shadow: inset 0 0 0 1px var(--tile-edge);
-    transition: transform 100ms ease, background 200ms ease;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 78px 22px;
+    column-gap: 10px;
+    align-items: center;
+    text-align: left;
+    background:
+      radial-gradient(circle at 16% 10%, rgba(255,255,255,.96), rgba(255,255,255,.55) 42%, rgba(255,255,255,.48) 100%),
+      linear-gradient(145deg, rgba(255,255,255,.82), rgba(255,255,255,.50));
+    border: 1px solid rgba(255,255,255,.82);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.98),
+      inset 0 -1px 0 rgba(178,194,217,.12),
+      0 18px 42px rgba(38,58,92,.075),
+      0 3px 10px rgba(38,58,92,.035);
+    backdrop-filter: blur(24px) saturate(155%);
+    -webkit-backdrop-filter: blur(24px) saturate(155%);
+    transition: transform 130ms ease, box-shadow 180ms ease, background 180ms ease;
   }
-  .new-game:hover { background: #232730; }
-  .new-game:active { transform: scale(0.97); }
+  .difficulty-card:active { transform: scale(.985); }
+  .difficulty-card .label {
+    font-size: 25px;
+    line-height: 1;
+    font-weight: 850;
+    letter-spacing: .025em;
+    margin-bottom: 17px;
+    color: #10223d;
+  }
+  .difficulty-card .sub {
+    font-size: 17px;
+    line-height: 1;
+    color: #7f8da2;
+    font-weight: 650;
+    letter-spacing: -.02em;
+  }
+  .mini-grid {
+    width: 55px;
+    height: 55px;
+    display: grid;
+    gap: 5px;
+    padding: 1px;
+    justify-self: center;
+    filter: drop-shadow(0 7px 12px rgba(60,92,140,.08));
+  }
+  .mini-grid.g3 { grid-template-columns: repeat(3, 1fr); }
+  .mini-grid.g4 {
+    width: 56px;
+    height: 56px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+  .mini-grid span {
+    border-radius: 5px;
+    background: linear-gradient(145deg, rgba(221,231,246,.82), rgba(198,216,239,.58));
+    border: 1px solid rgba(255,255,255,.56);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.85),
+      0 4px 9px rgba(77,104,144,.06);
+  }
+  .mini-grid span.hot {
+    background: linear-gradient(180deg, #5ca8ff 0%, #1877ff 100%);
+    border-color: rgba(255,255,255,.68);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.52),
+      0 5px 12px rgba(24,119,255,.35),
+      0 0 0 2px rgba(24,119,255,.08);
+  }
+  .chev {
+    width: 22px;
+    height: 22px;
+    color: #7f8ea4;
+    stroke-width: 2.35;
+    justify-self: end;
+  }
+  .photo-thumb {
+    width: 55px;
+    height: 55px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    justify-self: center;
+    background: linear-gradient(180deg, #5ca8ff 0%, #1877ff 100%);
+    border: 1px solid rgba(255,255,255,.68);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.52),
+      0 8px 16px rgba(24,119,255,.34),
+      0 0 0 2px rgba(24,119,255,.08);
+    color: white;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+  }
+  .photo-thumb svg { width: 24px; height: 24px; }
+  .photo-thumb.has-image svg { display: none; }
+  .infinity-thumb {
+    width: 55px;
+    height: 55px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    justify-self: center;
+    background: linear-gradient(180deg, #b69bff 0%, #6a45e7 100%);
+    border: 1px solid rgba(255,255,255,.68);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.52),
+      0 8px 16px rgba(106,69,231,.32),
+      0 0 0 2px rgba(106,69,231,.08);
+    color: white;
+  }
+  .infinity-thumb svg { width: 32px; height: 22px; }
+  .home-stats { margin: 54px 2px 0; border-radius: 20px; min-height: 104px; display:grid; grid-template-columns: repeat(3,1fr); overflow:hidden; }
+  .home-stat { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; position:relative; }
+  .home-stat + .home-stat::before { content:""; position:absolute; left:0; top:22px; bottom:22px; width:1px; background: var(--line); }
+  .home-stat svg { width: 21px; height: 21px; color: #94a4ba; margin-bottom: 3px; }
+  .home-stat .cap { font-size: 12px; color: #7f8fa5; font-weight: 600; }
+  .home-stat .val { font-size: 18px; font-weight: 850; letter-spacing: -.02em; }
 
-  .best {
-    font: 500 11px/1 var(--mono);
-    color: var(--text-faint);
-    letter-spacing: 0.04em;
-    font-variant-numeric: tabular-nums;
-  }
-  .best .new {
-    color: var(--success);
-    margin-left: 8px;
-  }
+  .play-layout { flex: 1; display:flex; flex-direction:column; }
+  .stats-row { margin: 38px 22px 30px; display:grid; grid-template-columns: 1fr 1px 1fr; align-items:center; }
+  .divider { height: 42px; background: var(--line); }
+  .stat { padding-left: 0; }
+  .stat.right { text-align:center; }
+  .stat .cap { color: var(--muted); font-size: 12px; font-weight: 600; margin-bottom: 7px; }
+  .stat .num { font-size: 17px; font-weight: 850; font-variant-numeric: tabular-nums; letter-spacing: -.015em; }
 
-  .shuffling .tile { pointer-events: none; }
-  .tile.phantom {
+  .board-wrap { width:100%; padding: 0 2px; }
+  .board {
+    width: 100%; aspect-ratio: 1/1; position: relative; border-radius: 20px;
+    background: linear-gradient(145deg, rgba(235,242,251,.56), rgba(255,255,255,.34));
+    border: 1px solid rgba(255,255,255,.78);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.9),
+      inset 0 -1px 0 rgba(135,159,191,.18),
+      0 18px 38px rgba(38,58,92,.10),
+      0 2px 8px rgba(38,58,92,.05);
+    backdrop-filter: blur(24px) saturate(160%);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    overflow: hidden;
+  }
+  .board::after { content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit; box-shadow: inset 0 0 30px rgba(255,255,255,.30); }
+  .tile {
+    position: absolute; border: 0; padding: 0; border-radius: 10px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--font); font-weight: 780; color: #34465f; font-variant-numeric: tabular-nums;
+    background: linear-gradient(145deg, rgba(255,255,255,.70), rgba(255,255,255,.46));
+    border: 1px solid rgba(255,255,255,.78);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.95),
+      inset 0 -1px 0 rgba(164,184,209,.18),
+      0 2px 5px rgba(35,55,86,.12);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    transition: transform var(--slide-ms) var(--spring), background 200ms ease, box-shadow 200ms ease, color 200ms ease, opacity 180ms ease;
+    will-change: transform;
+    touch-action: none;
+  }
+  .tile:active { transform: var(--pos) scale(.965); transition-duration: 80ms; }
+  .tile.img {
+    color: transparent;
+    background-color: transparent;
+    background-repeat: no-repeat;
+  }
+  .tile.img .img-num {
+    position: absolute;
+    top: 4px;
+    right: 7px;
+    font-size: 10px;
+    font-weight: 700;
+    color: rgba(255,255,255,.85);
+    text-shadow: 0 1px 2px rgba(0,0,0,.45);
     pointer-events: none;
-    cursor: default;
-    transition: opacity 500ms ease 100ms, box-shadow 400ms ease 500ms;
   }
+  .tile.hint {
+    color: var(--blue);
+    background: linear-gradient(145deg, rgba(230,242,255,.88), rgba(184,215,255,.48));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.96),
+      0 0 0 1px rgba(24,119,255,.18),
+      0 0 0 5px rgba(24,119,255,.10),
+      0 13px 26px rgba(24,119,255,.24);
+  }
+  .tile.complete { color: #2d415c; background: linear-gradient(145deg, rgba(255,255,255,.76), rgba(255,255,255,.48)); }
+
+  .toolbar { margin-top: auto; padding: 48px 6px 8px; display:grid; grid-template-columns: repeat(3, 1fr); gap: 28px; align-items:end; }
+  .tool-btn {
+    justify-self:center; width:70px; min-height:70px; border:0; border-radius:15px; cursor:pointer; position:relative;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px;
+    color: var(--ink); font-size: 11px; font-weight: 650;
+    transition: transform 100ms ease, filter 160ms ease, opacity 160ms ease;
+  }
+  .tool-btn svg { width: 24px; height: 24px; }
+  .tool-btn:active { transform: scale(.94); }
+  .tool-btn:disabled { opacity: .38; cursor:default; }
+  .badge { position:absolute; right:-5px; top:-7px; min-width:21px; height:21px; padding:0 6px; border-radius:999px; display:grid; place-items:center; background: var(--blue); color:white; font-size:12px; font-weight:850; box-shadow:0 6px 14px rgba(24,119,255,.30); }
+
+  .win-head { text-align:center; padding: 70px 0 28px; position:relative; }
+  .win-head h2 { margin:0 0 14px; color: var(--blue); font-size:25px; font-weight:900; letter-spacing:-.02em; }
+  .win-head p { margin:0; font-size:17px; font-weight:850; color:#1f314d; }
+  .win-head p span { color:#93a0b2; padding: 0 12px; }
+  .win-actions { padding: 44px 2px 0; display:flex; flex-direction:column; gap:22px; }
+  .primary-cta { height: 54px; border:0; border-radius: 12px; cursor:pointer; color:#fff; font-size:16px; font-weight:800; background: linear-gradient(180deg, #2b91ff 0%, #1170f6 100%); box-shadow: 0 16px 28px rgba(24,119,255,.28), inset 0 1px 0 rgba(255,255,255,.34); }
+  .secondary-cta {
+    height: 54px; border: 1px solid rgba(255,255,255,.85); border-radius: 12px; cursor: pointer;
+    color: var(--ink); font-size: 16px; font-weight: 800;
+    background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.60));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 10px 22px rgba(38,58,92,.10);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+  }
+  .link-btn { border:0; background:transparent; color:#718098; font-size:15px; font-weight:700; cursor:pointer; }
+  .confetti { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+  .confetti i { position:absolute; width:7px; height:11px; border-radius:2px; background: var(--blue); opacity:.55; animation: fall 1.8s var(--ease) both; }
+  @keyframes fall { from { transform: translateY(-20px) rotate(0deg); opacity:0; } 12% { opacity:.75; } to { transform: translateY(160px) rotate(230deg); opacity:0; } }
+
+  .tool-btn.pop, .secondary-cta.pop { animation: soft-pop 360ms var(--ease) both; }
+  @keyframes soft-pop { from { transform: scale(.965); } 55% { transform: scale(1.018); } to { transform: scale(1); } }
+
+  .tile.spawn { animation: tile-spawn 460ms var(--ease) both; }
+  @keyframes tile-spawn {
+    from { opacity:0; transform: var(--pos) scale(.86); filter: blur(2px); }
+    60%  { opacity:1; transform: var(--pos) scale(1.035); filter: blur(0); }
+    to   { opacity:1; transform: var(--pos) scale(1); }
+  }
+
+  .home-indicator { position: fixed; left:50%; bottom: max(7px, env(safe-area-inset-bottom)); width: 138px; height:5px; transform:translateX(-50%); border-radius: 999px; background: #111827; opacity:.32; pointer-events:none; }
 
   @media (max-width: 380px) {
-    .stats { gap: 24px; font-size: 22px; }
-    .chip { padding: 7px 10px; font-size: 12px; }
-    .mode-btn { padding: 7px 10px; font-size: 11px; }
+    .screen { padding-left: 18px; padding-right: 18px; }
+    .hero { margin-top: 34px; margin-bottom: 44px; }
+    .hero h1 { font-size: 27px; }
+    .toolbar { gap: 18px; }
+    .tool-btn { width:64px; min-height:64px; }
   }
-
   @media (prefers-reduced-motion: reduce) {
-    .tile, .board { transition-duration: 0ms !important; }
+    .tile, .tool-btn, .icon-btn, .difficulty-card { transition-duration: 0ms !important; }
+    .confetti i, .tool-btn.pop, .secondary-cta.pop, .tile.spawn { animation: none !important; }
   }
 </style>
 </head>
 <body>
-  <div class="app">
-    <header class="top">
-      <div class="chips" role="group" aria-label="난이도">
-        <button class="chip" data-size="3" aria-pressed="false">3</button>
-        <button class="chip" data-size="4" aria-pressed="true">4</button>
-        <button class="chip" data-size="5" aria-pressed="false">5</button>
+  <main class="screen active" id="homeScreen">
+
+    <div class="topbar">
+      <span></span><span></span>
+      <button class="icon-btn" id="settingsBtn" aria-label="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
+    </div>
+    <section class="home-top">
+      <div class="hero"><h1>슬라이딩 퍼즐</h1><p>집중하고, 정렬하고, 완성하세요.</p></div>
+      <div class="difficulty-list">
+        <button class="difficulty-card glass-card" data-size="3"><div><div class="label">3 × 3</div><div class="sub">8 퍼즐</div></div><div class="mini-grid g3"><span></span><span></span><span></span><span></span><span class="hot"></span><span></span><span></span><span></span><span></span></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        <button class="difficulty-card glass-card" data-size="4"><div><div class="label">4 × 4</div><div class="sub">15 퍼즐</div></div><div class="mini-grid g4"><span></span><span></span><span></span><span></span><span></span><span class="hot"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        <button class="difficulty-card glass-card" id="infiniteCard"><div><div class="label">무한의 퍼즐</div><div class="sub">3×3부터 끝없이 도전</div></div><div class="infinity-thumb"><svg viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4c5.5 0 5.5 16 0 16-6 0-9-16-15-16-4.5 0-4.5 16 0 16 6 0 9-16 15-16z"/></svg></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        <button class="difficulty-card glass-card" id="photoCard"><div><div class="label">내 사진 퍼즐</div><div class="sub">사진을 골라 직접 만들기</div></div><div class="photo-thumb" id="photoThumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5h-5L7.5 7.5H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2.5L14.5 5z"/><circle cx="12" cy="13" r="3.2"/></svg></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       </div>
-      <div class="mode-group" role="group" aria-label="모드">
-        <button class="mode-btn" data-mode="numbers" aria-pressed="true">숫자</button>
-        <button class="mode-btn" data-mode="gradient" aria-pressed="false">그라디언트</button>
-        <button class="mode-btn" data-mode="pattern" aria-pressed="false">패턴</button>
+      <input type="file" id="photoInput" accept="image/*" style="display:none" />
+      <div class="home-stats glass-card">
+        <div class="home-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10"/><path d="M10 20V5"/><path d="M15 20v-8"/><path d="M20 20V8"/></svg><div class="cap">오늘 플레이</div><div class="val" id="todayCount">0</div></div>
+        <div class="home-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg><div class="cap">최고 기록</div><div class="val" id="bestTime">--:--</div></div>
+        <div class="home-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg><div class="cap">완료</div><div class="val" id="completeCount">0</div></div>
       </div>
-    </header>
+    </section>
+  </main>
 
-    <div class="stats" aria-live="polite">
-      <div><span class="label">time</span><span class="value" id="time">00:00</span></div>
-      <div><span class="label">moves</span><span class="value" id="moves">0</span></div>
-    </div>
+  <main class="screen" id="playScreen">
 
-    <div class="board-wrap">
-      <div class="board" id="board" role="application" aria-label="슬라이딩 퍼즐"></div>
+    <div class="topbar">
+      <button class="icon-btn" id="backBtn" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="center-title"><button id="sizeCycle" aria-label="난이도 변경"><span id="diffLabel">3 × 3</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
+      <button class="icon-btn" id="newGame" aria-label="다시 셔플"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
     </div>
+    <section class="play-layout">
+      <div class="stats-row"><div class="stat"><div class="cap">시간</div><div class="num" id="time">00:00</div></div><div class="divider"></div><div class="stat right"><div class="cap">이동</div><div class="num" id="moves">0</div></div></div>
+      <div class="board-wrap"><div class="board" id="board" role="application" aria-label="슬라이딩 퍼즐"></div></div>
+      <div class="toolbar">
+        <button class="tool-btn glass-card" id="undoBtn" aria-label="되돌리기" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg><span>되돌리기</span></button>
+        <button class="tool-btn glass-card" id="hintBtn" aria-label="힌트"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14A6 6 0 1 0 8.91 14"/><path d="M12 2v1"/></svg><span>힌트</span><b class="badge" id="hintBadge">3</b></button>
+        <button class="tool-btn glass-card" id="shuffleBtn" aria-label="섞기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span>섞기</span></button>
+      </div>
+    </section>
+  </main>
 
-    <div class="bottom">
-      <button class="new-game" id="newGame">↻ 새 게임</button>
-      <div class="best" id="best">best · — · —</div>
-    </div>
-  </div>
+  <main class="screen" id="winScreen">
+
+    <div class="confetti" id="confetti"></div>
+    <section class="win-head"><h2>완성!</h2><p><b id="winTime">00:00</b><span>|</span><b id="winMoves">0 이동</b></p></section>
+    <div class="board-wrap"><div class="board" id="winBoard" aria-hidden="true"></div></div>
+    <div class="win-actions"><button class="primary-cta" id="againBtn">다시 플레이</button><button class="secondary-cta" id="retryBtn" style="display:none">다시하기</button><button class="link-btn" id="homeBtn">메인으로</button></div>
+  </main>
 
 <script>
 (() => {
   'use strict';
 
-  const LS_KEY = 'sliding_puzzle_v1';
-  const SIZES = [3, 4, 5];
-  const MODES = ['numbers', 'gradient', 'pattern'];
+  const LS_KEY = 'sliding_puzzle_glass_v1';
+  const SIZES = [3, 4];
+  const GAP = 4;
 
-  // Gradient mode is rendered as a solid-color mosaic:
-  // each tile is a single color sampled along the diagonal of (from → to).
-  const GRADIENTS = [
-    { from: '#4F46E5', to: '#EC4899' },
-    { from: '#06B6D4', to: '#8B5CF6' },
-    { from: '#F59E0B', to: '#EF4444' },
-    { from: '#10B981', to: '#3B82F6' },
-  ];
-
-  function hexToRgb(hex) {
-    const m = hex.replace('#', '');
-    return [parseInt(m.slice(0, 2), 16), parseInt(m.slice(2, 4), 16), parseInt(m.slice(4, 6), 16)];
-  }
-  function rgbToHex(r, g, b) {
-    const h = (n) => Math.round(n).toString(16).padStart(2, '0');
-    return `#${h(r)}${h(g)}${h(b)}`;
-  }
-  function lerpColor(a, b, t) {
-    const [r1, g1, b1] = hexToRgb(a);
-    const [r2, g2, b2] = hexToRgb(b);
-    return rgbToHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
-  }
-  function gradientColorAt(pair, col, row) {
-    const denom = Math.max(1, 2 * (size - 1));
-    const t = (col + row) / denom;
-    return lerpColor(pair.from, pair.to, t);
-  }
-
-  // SVG patterns as data URLs (rendered onto tiles in pattern mode)
-  const PATTERNS = [
-    // diagonal lines
-    `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%239EB8FF'/><stop offset='1' stop-color='%23EC4899'/></linearGradient><pattern id='p' width='20' height='20' patternUnits='userSpaceOnUse' patternTransform='rotate(45)'><line x1='0' y1='0' x2='0' y2='20' stroke='url(%23g)' stroke-width='8' opacity='0.55'/></pattern></defs><rect width='400' height='400' fill='%231E2128'/><rect width='400' height='400' fill='url(%23p)'/></svg>`,
-    // concentric circles
-    `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><rect width='400' height='400' fill='%231E2128'/><g fill='none' stroke='%237CE0B3' stroke-width='3' opacity='0.55'><circle cx='200' cy='200' r='40'/><circle cx='200' cy='200' r='80'/><circle cx='200' cy='200' r='120'/><circle cx='200' cy='200' r='160'/></g></svg>`,
-    // dots grid
-    `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'><rect width='400' height='400' fill='%231E2128'/><defs><pattern id='d' width='32' height='32' patternUnits='userSpaceOnUse'><circle cx='16' cy='16' r='5' fill='%239EB8FF' opacity='0.6'/></pattern></defs><rect width='400' height='400' fill='url(%23d)'/></svg>`,
-  ];
-
-  // --- State ---
-  let size = 4;
-  let mode = 'numbers';
-  let tiles = [];        // index = current position; value = tile value (1..N*N-1, or 0 for empty)
-  let order = new Map(); // value -> {row, col}
+  let size = 3;
+  let tiles = [];
+  let order = new Map();
   let emptyPos = 0;
   let moves = 0;
   let startTs = null;
   let timerHandle = null;
   let won = false;
   let lockInput = false;
-  let currentArt = null; // selected gradient/pattern for this round
+  let history = [];
+  let hints = 3;
+  let imageMode = false;
+  let currentImage = null;
+  let infiniteMode = false;
 
-  const boardEl = document.getElementById('board');
-  const timeEl = document.getElementById('time');
-  const movesEl = document.getElementById('moves');
-  const bestEl = document.getElementById('best');
-  const newGameBtn = document.getElementById('newGame');
+  const $ = (id) => document.getElementById(id);
+  const homeScreen = $('homeScreen');
+  const playScreen = $('playScreen');
+  const winScreen = $('winScreen');
+  const boardEl = $('board');
+  const winBoardEl = $('winBoard');
+  const timeEl = $('time');
+  const movesEl = $('moves');
+  const diffLabel = $('diffLabel');
+  const undoBtn = $('undoBtn');
+  const hintBtn = $('hintBtn');
+  const hintBadge = $('hintBadge');
 
-  // --- LocalStorage ---
+  function todayKey() { return new Date().toISOString().slice(0,10); }
+  function defaultStore() { return { v:1, lastSize:3, best:{}, today:{ date: todayKey(), plays: 0 }, completed: 0 }; }
   function loadLS() {
     try {
       const raw = localStorage.getItem(LS_KEY);
-      if (!raw) return { v: 1, best: {}, lastDifficulty: 4, lastMode: 'numbers' };
-      const obj = JSON.parse(raw);
-      if (!obj || obj.v !== 1) return { v: 1, best: {}, lastDifficulty: 4, lastMode: 'numbers' };
+      const obj = raw ? JSON.parse(raw) : defaultStore();
+      if (!obj || obj.v !== 1) return defaultStore();
+      if (!obj.today || obj.today.date !== todayKey()) obj.today = { date: todayKey(), plays: 0 };
       return obj;
-    } catch (e) {
-      return { v: 1, best: {}, lastDifficulty: 4, lastMode: 'numbers' };
-    }
+    } catch { return defaultStore(); }
   }
-  function saveLS(s) {
-    try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch (e) {}
-  }
-  function bestKey() { return `${size}:${mode}`; }
-  function getBest() {
-    const s = loadLS();
-    return s.best[bestKey()] || null;
-  }
-  function setBestIfBetter(timeMs, moves) {
-    const s = loadLS();
-    const k = bestKey();
-    const prev = s.best[k];
+  function saveLS(s) { try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch {} }
+  function mutateLS(fn) { const s = loadLS(); fn(s); saveLS(s); renderHomeStats(); }
+  function bestKey() { return String(size); }
+  function setBestIfBetter(timeMs, moveCount) {
     let isNew = false;
-    if (!prev || timeMs < prev.timeMs) {
-      s.best[k] = { timeMs, moves };
-      isNew = true;
-    }
-    s.lastDifficulty = size;
-    s.lastMode = mode;
-    saveLS(s);
+    mutateLS(s => {
+      const k = bestKey();
+      const prev = s.best[k];
+      if (!prev || timeMs < prev.timeMs) { s.best[k] = { timeMs, moves: moveCount }; isNew = true; }
+      s.completed = (s.completed || 0) + 1;
+      s.lastSize = size;
+    });
     return isNew;
   }
-  function rememberSelection() {
-    const s = loadLS();
-    s.lastDifficulty = size;
-    s.lastMode = mode;
-    saveLS(s);
-  }
+  function rememberSize() { mutateLS(s => { s.lastSize = size; }); }
+  function countPlay() { mutateLS(s => { s.today.plays = (s.today.plays || 0) + 1; }); }
 
-  // --- Format ---
   function fmtTime(ms) {
     const sec = Math.floor(ms / 1000);
     const m = Math.floor(sec / 60);
     const s = sec % 60;
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   }
-  function renderBest(flashNew = false) {
-    const b = getBest();
-    if (!b) {
-      bestEl.innerHTML = 'best · — · —';
-    } else {
-      bestEl.innerHTML = `best · ${fmtTime(b.timeMs)} · ${b.moves} moves` +
-        (flashNew ? ` <span class="new">new!</span>` : '');
-    }
+  function renderHomeStats() {
+    const s = loadLS();
+    $('todayCount').textContent = String(s.today?.plays || 0);
+    $('completeCount').textContent = String(s.completed || 0);
+    const best = s.best?.[String(s.lastSize || size)] || s.best?.[String(size)];
+    $('bestTime').textContent = best ? fmtTime(best.timeMs) : '--:--';
   }
 
-  // --- Board geometry ---
-  function tileSize() {
-    const gap = 8;
-    const boardPx = boardEl.clientWidth;
-    return (boardPx - gap * (size + 1)) / size;
+  function show(screen) {
+    [homeScreen, playScreen, winScreen].forEach(el => el.classList.remove('active'));
+    screen.classList.add('active');
+    requestAnimationFrame(() => {
+      sizeFonts();
+      layout(false);
+      if (screen === winScreen) layoutSolved(winBoardEl);
+    });
   }
-  function tilePos(row, col) {
-    const gap = 8;
-    const ts = tileSize();
-    const x = gap + col * (ts + gap);
-    const y = gap + row * (ts + gap);
-    return { x, y, ts };
-  }
-  function posToRC(pos) {
-    return { row: Math.floor(pos / size), col: pos % size };
-  }
+  function updateDiffLabel() { diffLabel.textContent = `${size} × ${size}`; }
+  function posToRC(pos) { return { row: Math.floor(pos / size), col: pos % size }; }
   function rcToPos(row, col) { return row * size + col; }
+  function tileSize(board = boardEl) { const boardPx = board.clientWidth; return (boardPx - GAP * (size + 1)) / size; }
+  function tilePos(row, col, board = boardEl) { const ts = tileSize(board); return { x: GAP + col * (ts + GAP), y: GAP + row * (ts + GAP), ts }; }
 
-  // --- Build tiles DOM ---
-  function buildTiles() {
-    boardEl.innerHTML = '';
-    boardEl.style.setProperty('--gap', '8px');
-    tiles = [];
-    order = new Map();
-    won = false;
-    boardEl.classList.remove('complete', 'pulse');
-
-    // pick art for this round
-    if (mode === 'gradient') {
-      currentArt = GRADIENTS[Math.floor(Math.random() * GRADIENTS.length)];
-    } else if (mode === 'pattern') {
-      currentArt = PATTERNS[Math.floor(Math.random() * PATTERNS.length)];
-    } else {
-      currentArt = null;
-    }
-
+  function buildTiles(target = boardEl, solved = false) {
+    target.innerHTML = '';
+    if (!solved) { tiles = []; order = new Map(); history = []; won = false; updateUndo(); }
     const N = size * size;
     for (let i = 0; i < N - 1; i++) {
       const val = i + 1;
       const row = Math.floor(i / size);
       const col = i % size;
-      tiles[i] = val;
-      order.set(val, { row, col });
-
+      if (!solved) { tiles[i] = val; order.set(val, { row, col }); }
       const el = document.createElement('button');
       el.className = 'tile';
       el.dataset.value = String(val);
       el.setAttribute('aria-label', `타일 ${val}`);
-      const num = document.createElement('span');
-      num.className = 'num';
-      num.textContent = val;
-      el.appendChild(num);
-
-      if (mode === 'gradient' || mode === 'pattern') {
-        el.classList.add('has-art');
-        const art = document.createElement('span');
-        art.className = 'art';
-        if (mode === 'gradient') {
-          const targetRow = Math.floor((val - 1) / size);
-          const targetCol = (val - 1) % size;
-          art.style.background = gradientColorAt(currentArt, targetCol, targetRow);
-        } else {
-          art.style.backgroundImage = `url("${currentArt}")`;
-        }
-        el.appendChild(art);
+      if (imageMode && currentImage) {
+        el.classList.add('img');
+        el.style.backgroundImage = `url("${currentImage}")`;
+        const numEl = document.createElement('span');
+        numEl.className = 'img-num';
+        numEl.textContent = String(val);
+        el.appendChild(numEl);
+      } else {
+        el.textContent = String(val);
       }
-      el.addEventListener('click', () => tryTapTile(val));
-      boardEl.appendChild(el);
+      if (!solved) el.addEventListener('click', () => tryTapTile(val));
+      target.appendChild(el);
     }
-    tiles[N - 1] = 0;
-    emptyPos = N - 1;
-    layout();
-    sizeFonts();
+    if (!solved) { tiles[N - 1] = 0; emptyPos = N - 1; layout(false); sizeFonts(); }
+    else layoutSolved(target);
   }
-
   function sizeFonts() {
-    const ts = tileSize();
-    const fs = Math.max(14, ts * 0.32);
-    boardEl.querySelectorAll('.tile').forEach(el => {
-      el.style.fontSize = `${fs}px`;
+    [boardEl, winBoardEl].forEach(board => {
+      if (!board || !board.clientWidth) return;
+      const ts = tileSize(board);
+      const fs = Math.max(24, ts * 0.36);
+      board.querySelectorAll('.tile').forEach(el => { el.style.fontSize = `${fs}px`; });
     });
   }
-
-  // --- Layout (position all tiles) ---
+  function applyImageBg(el, board, val) {
+    if (!(imageMode && currentImage)) return;
+    const ts = tileSize(board);
+    const boardW = board.clientWidth;
+    const targetRow = Math.floor((val - 1) / size);
+    const targetCol = (val - 1) % size;
+    const x = GAP + targetCol * (ts + GAP);
+    const y = GAP + targetRow * (ts + GAP);
+    el.style.backgroundSize = `${boardW}px ${boardW}px`;
+    el.style.backgroundPosition = `-${x}px -${y}px`;
+  }
   function layout(animate = true) {
-    const ts = tileSize();
-    const gap = 8;
-    const totalW = ts * size + gap * (size - 1);
-    for (let val of order.keys()) {
-      const { row, col } = order.get(val);
-      const { x, y } = tilePos(row, col);
+    if (!boardEl.clientWidth) return;
+    const ts = tileSize(boardEl);
+    for (const val of order.keys()) {
+      const rc = order.get(val);
+      const { x, y } = tilePos(rc.row, rc.col, boardEl);
       const el = boardEl.querySelector(`.tile[data-value="${val}"]`);
       if (!el) continue;
       el.style.width = `${ts}px`;
       el.style.height = `${ts}px`;
       el.style.setProperty('--pos', `translate(${x}px, ${y}px)`);
       el.style.transform = `translate(${x}px, ${y}px)`;
-      if (mode === 'pattern') {
-        // pattern slice corresponds to the tile's TARGET position (puzzle to reassemble)
-        const targetRow = Math.floor((val - 1) / size);
-        const targetCol = (val - 1) % size;
-        const art = el.querySelector('.art');
-        if (art) {
-          art.style.backgroundSize = `${totalW}px ${totalW}px`;
-          art.style.backgroundPosition = `-${targetCol * (ts + gap)}px -${targetRow * (ts + gap)}px`;
-        }
-      }
+      applyImageBg(el, boardEl, val);
     }
-    if (!animate) {
-      // force no-anim reflow
-      boardEl.querySelectorAll('.tile').forEach(el => {
-        el.style.transition = 'none';
-        // eslint-disable-next-line no-unused-expressions
-        el.offsetHeight;
-        el.style.transition = '';
-      });
-    }
+    if (!animate) disableTransitionsOnce(boardEl);
+  }
+  function layoutSolved(target) {
+    if (!target.clientWidth) return;
+    const ts = tileSize(target);
+    target.querySelectorAll('.tile').forEach(el => {
+      const val = Number(el.dataset.value);
+      const pos = val - 1;
+      const { row, col } = posToRC(pos);
+      const { x, y } = tilePos(row, col, target);
+      el.style.width = `${ts}px`;
+      el.style.height = `${ts}px`;
+      el.style.setProperty('--pos', `translate(${x}px, ${y}px)`);
+      el.style.transform = `translate(${x}px, ${y}px)`;
+      el.classList.add('complete');
+      applyImageBg(el, target, val);
+    });
+    disableTransitionsOnce(target);
+  }
+  function disableTransitionsOnce(root) {
+    root.querySelectorAll('.tile').forEach(el => { el.style.transition = 'none'; el.offsetHeight; el.style.transition = ''; });
   }
 
-  // --- Movement ---
   function neighborsOf(pos) {
     const { row, col } = posToRC(pos);
     const out = [];
@@ -543,15 +625,9 @@
     if (col < size - 1) out.push(rcToPos(row, col + 1));
     return out;
   }
-  function isAdjacentToEmpty(pos) {
-    return neighborsOf(emptyPos).includes(pos);
-  }
-  function findPosOfValue(val) {
-    return tiles.indexOf(val);
-  }
-
+  function isAdjacentToEmpty(pos) { return neighborsOf(emptyPos).includes(pos); }
+  function findPosOfValue(val) { return tiles.indexOf(val); }
   function applyMove(tilePos_) {
-    // swap tile at tilePos_ with empty
     const val = tiles[tilePos_];
     tiles[emptyPos] = val;
     tiles[tilePos_] = 0;
@@ -559,29 +635,24 @@
     emptyPos = tilePos_;
     order.set(val, newRC);
   }
-
   function tryTapTile(val) {
     if (lockInput || won) return;
     const pos = findPosOfValue(val);
     if (!isAdjacentToEmpty(pos)) return;
-    doMove(pos);
+    doMove(pos, true);
   }
-
-  function doMove(pos) {
+  function doMove(pos, pushHistory) {
+    const wasEmpty = emptyPos;
     applyMove(pos);
+    if (pushHistory) { history.push({ tileTo: wasEmpty, emptyTo: pos }); updateUndo(); }
     if (startTs === null) startTimer();
     moves++;
     movesEl.textContent = moves;
     layout(true);
-    if (isSolved()) {
-      onSolved();
-    }
+    clearHints();
+    if (isSolved()) onSolved();
   }
-
   function tryMoveByDirection(dir) {
-    // dir from user perspective: arrow up = empty moves up = tile from below moves up into empty
-    // We treat: pressing arrow key moves the tile that is on the OPPOSITE side of empty.
-    // i.e. arrow up → bring tile that's below empty UP into empty.
     if (lockInput || won) return;
     const { row, col } = posToRC(emptyPos);
     let target = -1;
@@ -589,32 +660,32 @@
     if (dir === 'down' && row > 0) target = rcToPos(row - 1, col);
     if (dir === 'left' && col < size - 1) target = rcToPos(row, col + 1);
     if (dir === 'right' && col > 0) target = rcToPos(row, col - 1);
-    if (target >= 0) doMove(target);
+    if (target >= 0) doMove(target, true);
   }
-
+  function undo() {
+    if (lockInput || won || !history.length) return;
+    const last = history.pop();
+    applyMove(last.tileTo);
+    moves = Math.max(0, moves - 1);
+    movesEl.textContent = moves;
+    layout(true);
+    updateUndo();
+  }
+  function updateUndo() { undoBtn.disabled = history.length === 0 || won; }
   function isSolved() {
     const N = size * size;
-    for (let i = 0; i < N - 1; i++) {
-      if (tiles[i] !== i + 1) return false;
-    }
+    for (let i = 0; i < N - 1; i++) if (tiles[i] !== i + 1) return false;
     return true;
   }
 
-  // --- Shuffle (always solvable by construction) ---
-  async function shuffle() {
+  async function shuffle(startPlay = true) {
     lockInput = true;
-    boardEl.classList.add('shuffling');
-    // reset state
+    stopTimer();
     buildTiles();
-    moves = 0;
-    movesEl.textContent = '0';
-    startTs = null;
-    timeEl.textContent = '00:00';
-    timeEl.classList.remove('flash');
-    won = false;
-
-    // do random legal moves
-    const steps = Math.max(60, size * size * 8);
+    moves = 0; movesEl.textContent = '0';
+    startTs = null; timeEl.textContent = '00:00';
+    won = false; hints = 3; hintBadge.textContent = hints; clearHints();
+    const steps = Math.max(70, size * size * 10);
     let prevPos = -1;
     for (let i = 0; i < steps; i++) {
       const neigh = neighborsOf(emptyPos).filter(p => p !== prevPos);
@@ -622,177 +693,218 @@
       prevPos = emptyPos;
       applyMove(pick);
     }
-    // ensure not already solved
-    if (isSolved()) {
-      const neigh = neighborsOf(emptyPos);
-      applyMove(neigh[0]);
-    }
-    layout(false);
-    // small visual settle delay
-    await sleep(50);
+    if (isSolved()) applyMove(neighborsOf(emptyPos)[0]);
+    layout(false); history = []; updateUndo();
+    spawnTiles();
+    if (startPlay) countPlay();
+    await sleep(60);
     lockInput = false;
-    boardEl.classList.remove('shuffling');
   }
-
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  function startTimer() { startTs = performance.now(); timerHandle = setInterval(tickTimer, 200); }
+  function stopTimer() { if (timerHandle) { clearInterval(timerHandle); timerHandle = null; } }
+  function tickTimer() { if (startTs !== null) timeEl.textContent = fmtTime(performance.now() - startTs); }
+  function elapsedMs() { return startTs === null ? 0 : performance.now() - startTs; }
 
-  // --- Timer ---
-  function startTimer() {
-    startTs = performance.now();
-    timerHandle = setInterval(tickTimer, 200);
+  function clearHints() { boardEl.querySelectorAll('.tile.hint').forEach(el => el.classList.remove('hint')); }
+  function showHint() {
+    if (lockInput || won || hints <= 0) return;
+    clearHints();
+    const candidates = neighborsOf(emptyPos).map(p => ({ p, val: tiles[p] })).filter(x => x.val > 0);
+    if (!candidates.length) return;
+    candidates.sort((a, b) => manhattanAfterMove(a.p) - manhattanAfterMove(b.p));
+    const val = candidates[0].val;
+    const el = boardEl.querySelector(`.tile[data-value="${val}"]`);
+    if (el) el.classList.add('hint');
+    hints--; hintBadge.textContent = hints;
   }
-  function stopTimer() {
-    if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
-  }
-  function tickTimer() {
-    if (startTs === null) return;
-    const ms = performance.now() - startTs;
-    timeEl.textContent = fmtTime(ms);
-  }
-  function elapsedMs() {
-    if (startTs === null) return 0;
-    return performance.now() - startTs;
-  }
-
-  function revealPhantomTile() {
-    const lastPos = size * size - 1;
-    const { row, col } = posToRC(lastPos);
-    const { x, y, ts } = tilePos(row, col);
-    const gap = 8;
-    const totalW = ts * size + gap * (size - 1);
-    const phantom = document.createElement('div');
-    phantom.className = 'tile phantom has-art complete';
-    phantom.style.width = `${ts}px`;
-    phantom.style.height = `${ts}px`;
-    phantom.style.transform = `translate(${x}px, ${y}px)`;
-    phantom.style.opacity = '0';
-    const art = document.createElement('span');
-    art.className = 'art';
-    if (mode === 'gradient') {
-      art.style.background = gradientColorAt(currentArt, col, row);
-    } else {
-      art.style.backgroundImage = `url("${currentArt}")`;
-      art.style.backgroundSize = `${totalW}px ${totalW}px`;
-      art.style.backgroundPosition = `-${col * (ts + gap)}px -${row * (ts + gap)}px`;
+  function manhattanAfterMove(pos) {
+    const copy = tiles.slice();
+    copy[emptyPos] = copy[pos]; copy[pos] = 0;
+    let sum = 0;
+    for (let i = 0; i < copy.length; i++) {
+      const val = copy[i]; if (!val) continue;
+      const goal = val - 1;
+      const a = posToRC(i), b = posToRC(goal);
+      sum += Math.abs(a.row - b.row) + Math.abs(a.col - b.col);
     }
-    phantom.appendChild(art);
-    boardEl.appendChild(phantom);
-    requestAnimationFrame(() => { phantom.style.opacity = '1'; });
+    return sum;
   }
 
-  // --- Solved ---
+  function pulse(el, cls = 'pop') {
+    if (!el) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }
+  function spawnTiles() {
+    boardEl.querySelectorAll('.tile').forEach((el, i) => {
+      el.classList.remove('spawn');
+      el.style.animationDelay = `${Math.min(i * 18, 180)}ms`;
+      void el.offsetWidth;
+      el.classList.add('spawn');
+    });
+  }
+  function configureWinActions() {
+    const again = $('againBtn');
+    const retry = $('retryBtn');
+    const home = $('homeBtn');
+    if (infiniteMode) {
+      again.textContent = `다음 (${size + 1} × ${size + 1})`;
+      retry.style.display = '';
+      home.textContent = '홈';
+    } else {
+      again.textContent = '다시 플레이';
+      retry.style.display = 'none';
+      home.textContent = '메인으로';
+    }
+  }
   function onSolved() {
-    won = true;
-    lockInput = true;
-    stopTimer();
-    const total = elapsedMs();
+    won = true; lockInput = true; updateUndo(); stopTimer();
+    const total = Math.round(elapsedMs());
     timeEl.textContent = fmtTime(total);
-
-    boardEl.classList.add('complete');
-    requestAnimationFrame(() => boardEl.classList.add('pulse'));
-    setTimeout(() => boardEl.classList.remove('pulse'), 520);
+    setBestIfBetter(total, moves);
     boardEl.querySelectorAll('.tile').forEach(el => el.classList.add('complete'));
-
-    if (mode === 'gradient' || mode === 'pattern') revealPhantomTile();
-
-    const isNew = setBestIfBetter(Math.round(total), moves);
-    if (isNew) {
-      timeEl.classList.add('flash');
-      renderBest(true);
-    } else {
-      renderBest(false);
+    $('winTime').textContent = fmtTime(total);
+    $('winMoves').textContent = `${moves} 이동`;
+    configureWinActions();
+    setTimeout(() => {
+      buildTiles(winBoardEl, true);
+      sizeFonts(); layoutSolved(winBoardEl);
+      makeConfetti();
+      show(winScreen);
+      lockInput = false;
+    }, 300);
+  }
+  function makeConfetti() {
+    const c = $('confetti'); c.innerHTML = '';
+    for (let i = 0; i < 28; i++) {
+      const n = document.createElement('i');
+      n.style.left = `${8 + Math.random() * 84}%`;
+      n.style.top = `${-10 + Math.random() * 20}px`;
+      n.style.animationDelay = `${Math.random() * .55}s`;
+      n.style.transform = `rotate(${Math.random()*180}deg)`;
+      n.style.background = Math.random() > .45 ? '#1877ff' : '#8bbdff';
+      c.appendChild(n);
     }
-    setTimeout(() => { lockInput = false; }, 600);
   }
 
-  // --- Controls ---
-  function setSize(n) {
-    if (size === n) return;
-    size = n;
-    document.querySelectorAll('.chip').forEach(c => {
-      c.setAttribute('aria-pressed', String(Number(c.dataset.size) === size));
-    });
-    rememberSelection();
-    renderBest();
-    shuffle();
+  function startGame(newSize = size) {
+    size = newSize;
+    rememberSize();
+    updateDiffLabel();
+    show(playScreen);
+    shuffle(true);
   }
-  function setMode(m) {
-    if (mode === m) return;
-    mode = m;
-    document.querySelectorAll('.mode-btn').forEach(b => {
-      b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
-    });
-    rememberSelection();
-    renderBest();
-    shuffle();
-  }
-
-  document.querySelectorAll('.chip').forEach(c => {
-    c.addEventListener('click', () => setSize(Number(c.dataset.size)));
+  document.querySelectorAll('.difficulty-card[data-size]').forEach(btn => btn.addEventListener('click', () => {
+    imageMode = false;
+    currentImage = null;
+    infiniteMode = false;
+    startGame(Number(btn.dataset.size));
+  }));
+  $('infiniteCard').addEventListener('click', () => {
+    imageMode = false;
+    currentImage = null;
+    infiniteMode = true;
+    startGame(3);
   });
-  document.querySelectorAll('.mode-btn').forEach(b => {
-    b.addEventListener('click', () => setMode(b.dataset.mode));
+  $('photoCard').addEventListener('click', () => $('photoInput').click());
+  function cropToSquare(srcDataUrl, cb) {
+    const img = new Image();
+    img.onload = () => {
+      const side = Math.min(img.width, img.height);
+      const sx = (img.width - side) / 2;
+      const sy = (img.height - side) / 2;
+      const outSide = Math.min(side, 1024);
+      const canvas = document.createElement('canvas');
+      canvas.width = outSide;
+      canvas.height = outSide;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outSide, outSide);
+      ctx.drawImage(img, sx, sy, side, side, 0, 0, outSide, outSide);
+      cb(canvas.toDataURL('image/jpeg', 0.92));
+    };
+    img.onerror = () => cb(null);
+    img.src = srcDataUrl;
+  }
+  $('photoInput').addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      cropToSquare(ev.target.result, (squared) => {
+        if (!squared) { alert('이미지를 불러올 수 없습니다.'); return; }
+        currentImage = squared;
+        imageMode = true;
+        const thumb = $('photoThumb');
+        if (thumb) {
+          thumb.classList.add('has-image');
+          thumb.style.backgroundImage = `url("${currentImage}")`;
+        }
+        startGame(size);
+      });
+    };
+    reader.onerror = () => {
+      currentImage = null;
+      imageMode = false;
+      alert('이미지를 불러올 수 없습니다.');
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   });
-  newGameBtn.addEventListener('click', () => shuffle());
+  $('backBtn').addEventListener('click', () => { infiniteMode = false; stopTimer(); show(homeScreen); renderHomeStats(); });
+  $('newGame').addEventListener('click', () => shuffle(true));
+  $('shuffleBtn').addEventListener('click', () => shuffle(true));
+  undoBtn.addEventListener('click', undo);
+  hintBtn.addEventListener('click', showHint);
+  $('againBtn').addEventListener('click', () => {
+    if (infiniteMode) {
+      size = size + 1;
+      rememberSize();
+      updateDiffLabel();
+      show(playScreen);
+      shuffle(true);
+    } else {
+      show(playScreen);
+      shuffle(true);
+    }
+  });
+  $('retryBtn').addEventListener('click', () => { pulse($('retryBtn')); show(playScreen); shuffle(true); });
+  $('homeBtn').addEventListener('click', () => { infiniteMode = false; show(homeScreen); renderHomeStats(); });
+  $('sizeCycle').addEventListener('click', () => {
+    if (infiniteMode) return;
+    size = size === 3 ? 4 : 3; updateDiffLabel(); shuffle(true);
+  });
+  $('settingsBtn').addEventListener('click', () => alert('설정은 다음 버전에서 연결하면 됩니다.'));
 
-  // Keyboard
   document.addEventListener('keydown', (e) => {
+    if (!playScreen.classList.contains('active')) return;
     const map = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
     if (map[e.key]) { e.preventDefault(); tryMoveByDirection(map[e.key]); }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
   });
-
-  // Swipe on board (anywhere)
   let touchStart = null;
-  boardEl.addEventListener('pointerdown', (e) => {
-    if (e.pointerType !== 'touch') return;
-    touchStart = { x: e.clientX, y: e.clientY };
-  });
+  boardEl.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') touchStart = { x: e.clientX, y: e.clientY }; });
   boardEl.addEventListener('pointerup', (e) => {
     if (e.pointerType !== 'touch' || !touchStart) return;
-    const dx = e.clientX - touchStart.x;
-    const dy = e.clientY - touchStart.y;
+    const dx = e.clientX - touchStart.x, dy = e.clientY - touchStart.y;
     const ax = Math.abs(dx), ay = Math.abs(dy);
-    const threshold = 24;
-    if (Math.max(ax, ay) < threshold) { touchStart = null; return; }
-    let dir;
-    if (ax > ay) dir = dx > 0 ? 'right' : 'left';
-    else dir = dy > 0 ? 'down' : 'up';
-    tryMoveByDirection(dir);
+    if (Math.max(ax, ay) >= 24) tryMoveByDirection(ax > ay ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
     touchStart = null;
   });
-
-  // Resize
   let resizeRaf = null;
   window.addEventListener('resize', () => {
     if (resizeRaf) cancelAnimationFrame(resizeRaf);
-    resizeRaf = requestAnimationFrame(() => {
-      sizeFonts();
-      layout(false);
-    });
+    resizeRaf = requestAnimationFrame(() => { sizeFonts(); layout(false); layoutSolved(winBoardEl); });
   });
-
-  // --- Init ---
   function init() {
     const s = loadLS();
-    size = SIZES.includes(s.lastDifficulty) ? s.lastDifficulty : 4;
-    mode = MODES.includes(s.lastMode) ? s.lastMode : 'numbers';
-    document.querySelectorAll('.chip').forEach(c => {
-      c.setAttribute('aria-pressed', String(Number(c.dataset.size) === size));
-    });
-    document.querySelectorAll('.mode-btn').forEach(b => {
-      b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
-    });
-    renderBest();
-    shuffle();
+    size = SIZES.includes(s.lastSize) ? s.lastSize : 3;
+    updateDiffLabel();
+    renderHomeStats();
   }
-
-  // Wait for board to have a real size
   window.addEventListener('load', init);
-
-  // Service worker registration (optional; works on https or localhost)
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
-    // No external SW file shipped in v1; intentionally skipped to keep zero-maintenance.
-  }
 })();
 </script>
 </body>
