@@ -193,6 +193,62 @@
   .debug-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .debug-row input:focus { border-color: var(--blue); }
   .debug-row button { flex-shrink: 0; }
+  .size-modal {
+    position: fixed; inset: 0;
+    background: rgba(31,49,77,.42);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; padding: 24px;
+    visibility: hidden; opacity: 0; pointer-events: none;
+    /* layer를 미리 유지해 첫 표시 시 backdrop-filter paint 비용 회피.
+       opacity 페이드 후 visibility 토글로 화면에서 사라지게 함. */
+    transition: opacity 120ms var(--ease), visibility 0s linear 120ms;
+  }
+  .size-modal.active {
+    visibility: visible; opacity: 1; pointer-events: auto;
+    transition: opacity 120ms var(--ease), visibility 0s;
+  }
+  .size-card {
+    background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(255,255,255,.78));
+    border: 1px solid rgba(255,255,255,.92);
+    box-shadow: 0 24px 56px rgba(31,49,77,.18);
+    border-radius: 20px;
+    padding: 20px;
+    width: min(320px, 86vw);
+    max-height: 80vh;
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  .size-card h3 {
+    margin: 0 0 12px;
+    font-size: 12px; font-weight: 800; letter-spacing: .12em;
+    color: var(--muted); text-transform: uppercase;
+  }
+  .size-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .size-option {
+    aspect-ratio: 1;
+    border: 1px solid rgba(31,49,77,.14);
+    border-radius: 12px;
+    background: linear-gradient(145deg, rgba(255,255,255,.74), rgba(255,255,255,.46));
+    display: grid; place-items: center;
+    font-size: 14px; font-weight: 800;
+    color: var(--ink);
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: .02em;
+    transition: transform 90ms var(--ease);
+  }
+  .size-option:active { transform: scale(.96); }
+  .size-option.current {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+    box-shadow: 0 6px 16px rgba(24,119,255,.28);
+  }
   .icon-btn {
     width: 44px; height: 44px; border: 0; background: transparent; border-radius: 16px;
     display: grid; place-items: center; color: var(--ink); cursor: pointer;
@@ -639,6 +695,13 @@
     </div>
   </div>
 
+  <div class="size-modal" id="sizeModal" aria-hidden="true">
+    <div class="size-card">
+      <h3>사이즈 선택</h3>
+      <div class="size-grid" id="sizeGrid"></div>
+    </div>
+  </div>
+
 <script>
 (() => {
   'use strict';
@@ -665,7 +728,6 @@
   }, { passive: false });
 
   const LS_KEY = 'sliding_puzzle_glass_v1';
-  const SIZES = [3, 4];
   // size 단계별 타일 간격 — 큰 그리드는 좁혀서 빽빽함 완화
   function gapFor() {
     if (size <= 8) return 4;
@@ -800,7 +862,11 @@
     else if (size <= 8)  { ratio = 0.30; minFs = 17; weight = 720; tileR = 8;  boardR = 12; }
     else if (size <= 11) { ratio = 0.26; minFs = 14; weight = 720; tileR = 6;  boardR = 8;  }
     else if (size <= 14) { ratio = 0.22; minFs = 12; weight = 680; tileR = 5;  boardR = 6;  }
-    else                 { ratio = 0.18; minFs = 10; weight = 640; tileR = 5;  boardR = 6;  }
+    else if (size <= 16) { ratio = 0.18; minFs = 10; weight = 640; tileR = 5;  boardR = 6;  }
+    else if (size === 17){ ratio = 0.15; minFs = 9;  weight = 620; tileR = 5;  boardR = 6;  }
+    else if (size === 18){ ratio = 0.14; minFs = 9;  weight = 600; tileR = 4;  boardR = 5;  }
+    else if (size === 19){ ratio = 0.13; minFs = 8;  weight = 580; tileR = 3;  boardR = 4;  }
+    else                 { ratio = 0.12; minFs = 8;  weight = 560; tileR = 2;  boardR = 3;  }
     [boardEl, winBoardEl].forEach(board => {
       if (!board || !board.clientWidth) return;
       board.style.borderRadius = `${boardR}px`;
@@ -1017,7 +1083,7 @@
   function spawnTiles() {
     boardEl.querySelectorAll('.tile').forEach((el, i) => {
       el.classList.remove('spawn');
-      const delay = Math.min(i * 18, 180);
+      const delay = Math.min(i * 10, 100);
       el.style.animationDelay = `${delay}ms`;
       void el.offsetWidth;
       el.classList.add('spawn');
@@ -1235,8 +1301,40 @@
   $('homeBtn').addEventListener('click', () => { infiniteMode = false; show(homeScreen); renderHomeStats(); });
   $('sizeCycle').addEventListener('click', () => {
     if (infiniteMode) return;
-    size = size === 3 ? 4 : 3; updateDiffLabel(); shuffle(true);
+    openSizeModal();
   });
+  // 사이즈 선택 모달 — 디폴트 3·4·5 + 무한 모드(또는 일반)에서 N×N 클리어 시 N+1 해금
+  const sizeModal = $('sizeModal');
+  const sizeGrid = $('sizeGrid');
+  function computeSizeOptions() {
+    const s = loadLS();
+    const bestKeys = Object.keys(s.best || {}).map(Number).filter(n => Number.isFinite(n) && n >= 3);
+    const maxBest = bestKeys.length ? Math.max(...bestKeys) : 0;
+    const top = Math.max(5, maxBest + 1); // 디폴트 5 + 클리어 사이즈의 다음 해금
+    const options = [];
+    for (let n = 3; n <= top; n++) options.push(n);
+    return options;
+  }
+  function renderSizeGrid() {
+    sizeGrid.innerHTML = '';
+    for (const n of computeSizeOptions()) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'size-option' + (n === size ? ' current' : '');
+      btn.textContent = `${n} × ${n}`;
+      btn.addEventListener('click', () => pickSize(n));
+      sizeGrid.appendChild(btn);
+    }
+  }
+  function openSizeModal() { renderSizeGrid(); sizeModal.classList.add('active'); }
+  function pickSize(n) {
+    sizeModal.classList.remove('active');
+    imageMode = false; currentImage = null; infiniteMode = false;
+    // 모달 닫기 paint를 한 프레임 보장 후 무거운 작업(빌드+셔플) 시작 → 닫기 응답 즉각
+    if (n === size) { requestAnimationFrame(() => shuffle(true)); return; }
+    requestAnimationFrame(() => startGame(n));
+  }
+  sizeModal.addEventListener('click', (e) => { if (e.target === sizeModal) sizeModal.classList.remove('active'); });
   $('settingsBtn').addEventListener('click', () => alert('설정은 다음 버전에서 연결하면 됩니다.'));
   // 데일리 챌린지 진입 placeholder (동작은 후속)
   $('dailyCard').addEventListener('click', () => alert('데일리 챌린지 — 곧 추가 예정'));
@@ -1263,7 +1361,7 @@
   });
   function init() {
     const s = loadLS();
-    size = SIZES.includes(s.lastSize) ? s.lastSize : 3;
+    size = (Number.isFinite(s.lastSize) && s.lastSize >= 3) ? s.lastSize : 3;
     updateDiffLabel();
     renderHomeStats();
   }
