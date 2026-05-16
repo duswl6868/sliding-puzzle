@@ -70,7 +70,7 @@ sliding_puzzle/
 - 상단 topbar: ← 뒤로 / `N × N ▼` (일반 모드에선 사이즈 토글) / ↻ 다시 셔플
 - stats-row: 시간 (좌) / 이동 (우) — 라벨 12px + 값 17px 굵게
 - 보드 (글라스 카드, slate 빈칸 비침)
-- 하단 플로팅 toolbar (글라스 카드, position: fixed): `↶ 되돌리기` / `💡 힌트 (badge)` / `🔀 셔플`
+- 하단 플로팅 toolbar (글라스 카드, position: fixed): `↶ 되돌리기` / `💡 힌트 (badge)` / `↻ 다시하기` (셔플 아이콘 유지 + 라벨만 "다시하기" — Win 화면 "다시 플레이"와 톤 통일, 사용자 의도와 직접 매칭)
 
 ### Win (`#winScreen`)
 - 컨페티 28개 (1.8s fall: translateY + rotate 230deg)
@@ -127,6 +127,21 @@ backdrop-filter: blur(18px) saturate(150%);
 
 타이포: 시스템 + Pretendard 우선. 숫자는 `font-variant-numeric: tabular-nums`, weight 780~850.
 
+**타일 폰트/라운드/간격 + 보드 라운드 — size별 단계 적용** (`sizeFonts` + `gapFor`):
+
+| size | ratio | min px | weight | tile r | board r | gap | 메모 |
+|---|---|---|---|---|---|---|---|
+| 3 ~ 6 | 0.36 | 24 | 780 | 10px | 14px | 4px | 기본 — 한·두 자릿수, 굵게 |
+| 7 ~ 8 | 0.30 | 17 | 720 | 8px | 12px | 4px | 두 자릿수 본격 — 호흡 확보 |
+| 9 ~ 11 | 0.26 | 14 | 720 | 6px | 8px | 3px | 세 자릿수 가능 (10×10 = 99), 라운드·간격 ↓ |
+| 12 ~ 14 | 0.22 | 12 | 680 | 5px | 6px | 2px | 세 자릿수 빈도 ↑ (12×12 = 143) — 추가 축소 + 얇게 |
+| 15 이상 | 0.18 | 10 | 640 | 5px | 6px | 2px | 폰트 추가 축소 (15×15 = 224, 자릿수 많음) |
+
+- 폰트 사이즈 = `Math.max(minPx, tileSize × ratio)`. 큰 그리드는 ratio 작아져 자릿수가 많아도 빽빽하지 않게 표현. 7부터 weight 720, 12부터 680, 15부터 640으로 점진 축소.
+- 타일 라운드는 타일이 작아질수록 비율상 동글동글해 보이는 현상을 방지하려고 단계적으로 줄임. CSS의 `.tile { border-radius: 10px }`는 기본값(3~6 단계 기준), 7 이상은 JS에서 인라인으로 덮어씀.
+- 보드 라운드는 타일 라운드보다 살짝 더 큰 톤으로 단계화 — 사용자 결정. CSS의 `.board { border-radius: 14px }`는 기본값(3~6 단계), 7 이상은 JS에서 인라인으로 덮어씀. `.board::after`는 `border-radius: inherit`이라 자동 반영.
+- gap은 `gapFor()`로 size에 따라 동적으로 계산. `tileSize`/`tilePos`/`applyImageBg` 함수 내에서 `const GAP = gapFor()`로 사용. size 변경 시 자동 반영 (별도 갱신 호출 불필요).
+
 ## 모션
 
 | 인터랙션 | 모션 |
@@ -149,9 +164,11 @@ backdrop-filter: blur(18px) saturate(150%);
 - `hints: number` 남은 힌트 (라운드 시작 시 3)
 - `imageMode: boolean`, `currentImage: dataUrl | null`
 - `infiniteMode: boolean`
+- `accumulatedMs: number` 라운드 시작부터 누적된 진행 시간
+- `lastResumeTs: number | null` 마지막 타이머 재개 시점 (`null`이면 일시정지·미시작 상태)
 
 ### 좌표
-- `GAP = 4`
+- `GAP = gapFor()` — size 단계별: 3~8 = 4px, 9~11 = 3px, 12 이상 = 2px (큰 그리드 빽빽함 완화)
 - `tileSize(board) = (boardPx - GAP × (size+1)) / size`
 - `tilePos(row, col) = { x: GAP + col×(ts+GAP), y: GAP + row×(ts+GAP), ts }`
 
@@ -171,6 +188,18 @@ backdrop-filter: blur(18px) saturate(150%);
 - 인접 타일들 중 **이동 후 맨해튼 거리 합이 최소**인 타일에 `hint` 클래스 (블루 강조)
 - 카운트 -1. 다음 이동 시 자동 클리어
 - 라운드 시작 시 3으로 reset
+- **이미 hint 표시 중이면 재클릭 무효** (early return) — 같은 보드 상태에서 동일한 후보를 반복 노출하는데 카운트가 차감되는 손해 방지. 한 번 이동해 hint가 자동 클리어된 뒤 다시 누르면 정상 차감
+
+### 타이머 / 일시정지
+
+- 단순 `startTs` 단일 변수 모델 폐기. **`accumulatedMs` + `lastResumeTs` 2개 변수**로 pause/resume 지원
+- `elapsedMs() = accumulatedMs + (lastResumeTs === null ? 0 : performance.now() - lastResumeTs)`
+- `startTimer()` — 첫 이동 시 호출 (가드: `lastResumeTs === null && accumulatedMs === 0`). `accumulatedMs = 0`, `lastResumeTs = now`, `setInterval(tickTimer, 200)`
+- `stopTimer()` — won/홈 복귀 등 라운드 종료. 누적 확정 (`accumulatedMs += now - lastResumeTs`) + `lastResumeTs = null` + interval 정지
+- `pauseTimer()` — 가시성 hidden 시. 누적만 갱신, interval은 그대로 (브라우저 throttle)
+- `resumeTimer()` — 가시성 visible 복귀. 가드: `lastResumeTs === null && !won && playScreen.active && (accumulatedMs > 0 || timerHandle !== null)`. `lastResumeTs = now`
+- `document.addEventListener('visibilitychange', ...)` — 화면 잠금 / 앱 스위치 / 다른 탭 이동 모두 동일 처리
+- **효과**: 백그라운드에서 시간이 흐르지 않아 베스트 기록이 부풀어 자동 갱신되는 문제 방지 (특히 무한 모드)
 
 ### 셔플
 - 완성 상태에서 무작위 합법 이동 `max(70, size² × 10)`회

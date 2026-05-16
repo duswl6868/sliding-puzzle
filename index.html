@@ -79,10 +79,11 @@
   .screen {
     width: 100%;
     max-width: 540px;
-    min-height: 100vh;
-    min-height: 100dvh;
+    height: 100vh;
+    height: 100dvh;
     margin: 0 auto;
-    padding: max(env(safe-area-inset-top), 18px) clamp(16px, 5vw, 24px) max(env(safe-area-inset-bottom), 18px);
+    /* 좌우 padding 키움 — 카드 box-shadow가 안에서 잘리지 않도록 buffer 확보 */
+    padding: max(env(safe-area-inset-top), 18px) clamp(20px, 5.5vw, 28px) max(env(safe-area-inset-bottom), 18px);
     display: none;
     position: relative;
   }
@@ -93,7 +94,9 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     touch-action: pan-y;
+    scrollbar-width: none;
   }
+  .screen.active::-webkit-scrollbar { display: none; }
 
   .statusbar {
     height: 26px;
@@ -119,11 +122,77 @@
   .topbar {
     height: 54px;
     display: grid;
-    grid-template-columns: 48px 1fr 48px;
+    grid-template-columns: 48px 1fr auto;
     align-items: center;
   }
   .topbar > .icon-btn:first-child  { justify-self: start; }
-  .topbar > .icon-btn:last-child   { justify-self: end; }
+  .topbar-right { display: flex; gap: 4px; justify-self: end; align-items: center; }
+  .debug-btn { color: var(--muted); }
+  .debug-btn svg { opacity: .85; }
+  /* 디버그 모달 — 게임 진행 중 강제 win 등 빠른 테스트용 */
+  .debug-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(31, 49, 77, .42);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 24px;
+  }
+  .debug-modal.active { display: flex; }
+  .debug-card {
+    background: linear-gradient(145deg, rgba(255,255,255,.94), rgba(255,255,255,.78));
+    border: 1px solid rgba(255,255,255,.92);
+    box-shadow: 0 24px 56px rgba(31,49,77,.18);
+    border-radius: 20px;
+    padding: 20px;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .debug-card h3 {
+    margin: 0 0 4px;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .debug-card button {
+    border: 0;
+    background: var(--blue);
+    color: #fff;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .debug-card button:active { transform: scale(.97); }
+  .debug-row { display: flex; gap: 8px; align-items: stretch; }
+  .debug-row input {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid rgba(31,49,77,.18);
+    border-radius: 12px;
+    padding: 0 14px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    font-family: inherit;
+    background: rgba(255,255,255,.6);
+    outline: none;
+    -moz-appearance: textfield;
+  }
+  .debug-row input::-webkit-outer-spin-button,
+  .debug-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .debug-row input:focus { border-color: var(--blue); }
+  .debug-row button { flex-shrink: 0; }
   .icon-btn {
     width: 44px; height: 44px; border: 0; background: transparent; border-radius: 16px;
     display: grid; place-items: center; color: var(--ink); cursor: pointer;
@@ -136,7 +205,13 @@
   .center-title button { border: 0; background: transparent; padding: 0; display:flex; align-items:center; gap:7px; cursor:pointer; }
   .center-title svg { width: 16px; height: 16px; opacity: .82; }
 
-  .home-top { flex: 1; display: flex; flex-direction: column; justify-content: center; padding-bottom: 20px; }
+  .home-top {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-bottom: 20px;
+  }
   .hero { text-align: center; margin: clamp(18px, 4vw, 36px) 0 clamp(22px, 5vw, 40px); }
   .hero h1 { margin: 0 0 10px; font-size: clamp(24px, 7vw, 34px); line-height: 1.12; letter-spacing: -.045em; font-weight: 850; }
   .hero p { margin: 0; color: var(--ink-soft); font-size: clamp(13px, 3.8vw, 17px); font-weight: 500; letter-spacing: -.025em; }
@@ -197,6 +272,60 @@
     color: #7f8da2;
     font-weight: 650;
     letter-spacing: -.02em;
+  }
+  /* 데일리 카드 — 다른 카드와 사이즈/구조 동일하지만 블루 강조로 "특별" 시각 위계 */
+  .daily-card {
+    /* 일반 카드의 화이트 글라스 위에 블루 미세 tint + 블루 보더 + 블루 glow */
+    background:
+      radial-gradient(circle at 18% 14%, rgba(255,255,255,.96), rgba(255,255,255,.55) 42%, rgba(255,255,255,.48) 100%),
+      linear-gradient(145deg, rgba(24,119,255,.10), rgba(75,160,255,.04));
+    border-color: rgba(24,119,255,.30);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.98),
+      inset 0 -1px 0 rgba(24,119,255,.10),
+      0 18px 42px rgba(24,119,255,.18),
+      0 3px 10px rgba(24,119,255,.10);
+    /* cap + label + sub 3줄이라 다른 카드(2줄)보다 빡빡 — vertical padding 추가 + min-height 살짝 키워 모바일에서 호흡 확보 */
+    padding-top: clamp(14px, 4vw, 18px);
+    padding-bottom: clamp(14px, 4vw, 18px);
+    min-height: clamp(100px, 26vw, 132px);
+    /* 다음 카드(.difficulty-list)와 명확한 시각 분리 */
+    margin-bottom: clamp(18px, 5vw, 26px);
+  }
+  .daily-card .label {
+    color: var(--blue);
+    letter-spacing: -.02em;
+    /* cap이 위에 붙어있어서 label↔sub 사이 간격은 살짝 줄임 (균형) */
+    margin-bottom: clamp(6px, 2vw, 10px);
+  }
+  .daily-card .sub { color: var(--ink-soft); }
+  .daily-cap {
+    display: inline-block;
+    font-size: clamp(9px, 2.6vw, 10px);
+    font-weight: 800;
+    letter-spacing: .14em;
+    color: var(--blue);
+    background: rgba(24,119,255,.12);
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-bottom: clamp(6px, 2vw, 8px);
+  }
+  /* 데일리 카드 썸네일 — 다른 카드의 .mini-grid와 동일 외곽 크기 (모바일에서도 적당히 작게) */
+  .daily-thumb {
+    width: clamp(42px, 12vw, 55px);
+    height: clamp(42px, 12vw, 55px);
+    border-radius: 12px;
+    background: linear-gradient(180deg, #5ca8ff 0%, #1877ff 100%);
+    display: grid;
+    place-items: center;
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(24,119,255,.32);
+    justify-self: center;
+  }
+  .daily-thumb svg {
+    width: 48%;
+    height: 48%;
+    stroke-width: 2;
   }
   .mini-grid {
     width: clamp(42px, 12vw, 55px);
@@ -271,7 +400,7 @@
     color: white;
   }
   .infinity-thumb svg { width: clamp(24px, 8vw, 32px); height: clamp(16px, 5.4vw, 22px); }
-  .home-stats { margin: clamp(20px, 6vw, 46px) 2px 0; border-radius: 20px; min-height: clamp(78px, 20vw, 104px); display:grid; grid-template-columns: repeat(3,1fr); overflow:hidden; }
+  .home-stats { margin: clamp(20px, 6vw, 46px) 0 0; border-radius: 20px; min-height: clamp(78px, 20vw, 104px); display:grid; grid-template-columns: repeat(3,1fr); overflow:hidden; }
   .home-stat { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; position:relative; padding: 8px 6px; }
   .home-stat + .home-stat::before { content:""; position:absolute; left:0; top:18%; bottom:18%; width:1px; background: var(--line); }
   .home-stat svg { width: clamp(18px, 4.5vw, 22px); height: clamp(18px, 4.5vw, 22px); color: #94a4ba; margin-bottom: 2px; }
@@ -288,7 +417,7 @@
 
   .board-wrap { width:100%; padding: 0 2px; }
   .board {
-    width: 100%; aspect-ratio: 1/1; position: relative; border-radius: 20px;
+    width: 100%; aspect-ratio: 1/1; position: relative; border-radius: 14px;
     background: linear-gradient(145deg, rgba(235,242,251,.56), rgba(255,255,255,.34));
     border: 1px solid rgba(255,255,255,.78);
     box-shadow:
@@ -438,6 +567,22 @@
     </div>
     <section class="home-top">
       <div class="hero"><h1>슬라이딩 퍼즐</h1><p>집중하고, 정렬하고, 완성하세요.</p></div>
+      <button class="difficulty-card glass-card daily-card" id="dailyCard">
+        <div>
+          <div class="daily-cap">TODAY</div>
+          <div class="label">오늘의 챌린지</div>
+          <div class="sub"><span id="dailySize">4 × 4</span> · <span id="dailyTimer">22:14 남음</span></div>
+        </div>
+        <div class="daily-thumb">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="5" width="18" height="16" rx="2"/>
+            <path d="M3 9h18"/>
+            <path d="M8 3v4"/>
+            <path d="M16 3v4"/>
+          </svg>
+        </div>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
       <div class="difficulty-list">
         <button class="difficulty-card glass-card" data-size="3"><div><div class="label">3 × 3</div><div class="sub">8 퍼즐</div></div><div class="mini-grid g3"><span></span><span></span><span></span><span></span><span class="hot"></span><span></span><span></span><span></span><span></span></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
         <button class="difficulty-card glass-card" data-size="4"><div><div class="label">4 × 4</div><div class="sub">15 퍼즐</div></div><div class="mini-grid g4"><span></span><span></span><span></span><span></span><span></span><span class="hot"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
@@ -458,7 +603,10 @@
     <div class="topbar">
       <button class="icon-btn" id="backBtn" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
       <div class="center-title"><button id="sizeCycle" aria-label="난이도 변경"><span id="diffLabel">3 × 3</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
-      <button class="icon-btn" id="newGame" aria-label="다시 셔플"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+      <div class="topbar-right">
+        <button class="icon-btn debug-btn" id="debugBtn" aria-label="디버그"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.121 2.121 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></button>
+        <button class="icon-btn" id="newGame" aria-label="다시 셔플"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
+      </div>
     </div>
     <section class="play-layout">
       <div class="stats-row"><div class="stat"><div class="cap">시간</div><div class="num" id="time">00:00</div></div><div class="divider"></div><div class="stat right"><div class="cap">이동</div><div class="num" id="moves">0</div></div></div>
@@ -466,7 +614,7 @@
       <div class="toolbar">
         <button class="tool-btn glass-card" id="undoBtn" aria-label="되돌리기" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg><span>되돌리기</span></button>
         <button class="tool-btn glass-card" id="hintBtn" aria-label="힌트"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M15.09 14A6 6 0 1 0 8.91 14"/><path d="M12 2v1"/></svg><span>힌트</span><b class="badge" id="hintBadge">3</b></button>
-        <button class="tool-btn glass-card" id="shuffleBtn" aria-label="섞기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span>섞기</span></button>
+        <button class="tool-btn glass-card" id="shuffleBtn" aria-label="다시하기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg><span>다시하기</span></button>
       </div>
     </section>
   </main>
@@ -478,6 +626,18 @@
     <div class="board-wrap"><div class="board" id="winBoard" aria-hidden="true"></div></div>
     <div class="win-actions"><button class="primary-cta" id="againBtn">다시 플레이</button><button class="secondary-cta" id="retryBtn" style="display:none">다시하기</button><button class="link-btn" id="homeBtn">메인으로</button></div>
   </main>
+
+  <!-- 디버그 모달 — 빈공간(backdrop) 클릭으로 닫기 -->
+  <div class="debug-modal" id="debugModal" aria-hidden="true">
+    <div class="debug-card">
+      <h3>Debug</h3>
+      <button id="debugWinBtn">Win — 즉시 클리어</button>
+      <div class="debug-row">
+        <input type="number" id="debugSizeInput" min="3" max="15" step="1" inputmode="numeric" placeholder="size" />
+        <button id="debugNextBtn">Next</button>
+      </div>
+    </div>
+  </div>
 
 <script>
 (() => {
@@ -506,14 +666,22 @@
 
   const LS_KEY = 'sliding_puzzle_glass_v1';
   const SIZES = [3, 4];
-  const GAP = 4;
+  // size 단계별 타일 간격 — 큰 그리드는 좁혀서 빽빽함 완화
+  function gapFor() {
+    if (size <= 8) return 4;
+    if (size <= 11) return 3;
+    return 2;
+  }
 
   let size = 3;
   let tiles = [];
   let order = new Map();
   let emptyPos = 0;
   let moves = 0;
-  let startTs = null;
+  // 타이머: 단순 startTs → "누적된 진행 시간 + 마지막 재개 시점" 모델
+  // visibilitychange(화면 가림)에 대응해 백그라운드에서 시간이 흐르지 않도록 pause/resume 지원
+  let accumulatedMs = 0;
+  let lastResumeTs = null;
   let timerHandle = null;
   let won = false;
   let lockInput = false;
@@ -590,8 +758,8 @@
   function updateDiffLabel() { diffLabel.textContent = `${size} × ${size}`; }
   function posToRC(pos) { return { row: Math.floor(pos / size), col: pos % size }; }
   function rcToPos(row, col) { return row * size + col; }
-  function tileSize(board = boardEl) { const boardPx = board.clientWidth; return (boardPx - GAP * (size + 1)) / size; }
-  function tilePos(row, col, board = boardEl) { const ts = tileSize(board); return { x: GAP + col * (ts + GAP), y: GAP + row * (ts + GAP), ts }; }
+  function tileSize(board = boardEl) { const GAP = gapFor(); const boardPx = board.clientWidth; return (boardPx - GAP * (size + 1)) / size; }
+  function tilePos(row, col, board = boardEl) { const GAP = gapFor(); const ts = tileSize(board); return { x: GAP + col * (ts + GAP), y: GAP + row * (ts + GAP), ts }; }
 
   function buildTiles(target = boardEl, solved = false) {
     target.innerHTML = '';
@@ -626,15 +794,28 @@
     else layoutSolved(target);
   }
   function sizeFonts() {
+    // size 단계별 폰트(비율/최소값/굵기) + 타일 라운드 + 보드 라운드 조정
+    let ratio, minFs, weight, tileR, boardR;
+    if (size <= 6)       { ratio = 0.36; minFs = 24; weight = 780; tileR = 10; boardR = 14; }
+    else if (size <= 8)  { ratio = 0.30; minFs = 17; weight = 720; tileR = 8;  boardR = 12; }
+    else if (size <= 11) { ratio = 0.26; minFs = 14; weight = 720; tileR = 6;  boardR = 8;  }
+    else if (size <= 14) { ratio = 0.22; minFs = 12; weight = 680; tileR = 5;  boardR = 6;  }
+    else                 { ratio = 0.18; minFs = 10; weight = 640; tileR = 5;  boardR = 6;  }
     [boardEl, winBoardEl].forEach(board => {
       if (!board || !board.clientWidth) return;
+      board.style.borderRadius = `${boardR}px`;
       const ts = tileSize(board);
-      const fs = Math.max(24, ts * 0.36);
-      board.querySelectorAll('.tile').forEach(el => { el.style.fontSize = `${fs}px`; });
+      const fs = Math.max(minFs, ts * ratio);
+      board.querySelectorAll('.tile').forEach(el => {
+        el.style.fontSize = `${fs}px`;
+        el.style.fontWeight = weight;
+        el.style.borderRadius = `${tileR}px`;
+      });
     });
   }
   function applyImageBg(el, board, val) {
     if (!(imageMode && currentImage)) return;
+    const GAP = gapFor();
     const ts = tileSize(board);
     const boardW = board.clientWidth;
     const targetRow = Math.floor((val - 1) / size);
@@ -710,7 +891,7 @@
     const wasEmpty = emptyPos;
     applyMove(pos);
     if (pushHistory) { history.push({ tileTo: wasEmpty, emptyTo: pos }); updateUndo(); }
-    if (startTs === null) startTimer();
+    if (lastResumeTs === null && accumulatedMs === 0) startTimer();
     moves++;
     movesEl.textContent = moves;
     layout(true);
@@ -748,7 +929,7 @@
     stopTimer();
     buildTiles();
     moves = 0; movesEl.textContent = '0';
-    startTs = null; timeEl.textContent = '00:00';
+    accumulatedMs = 0; lastResumeTs = null; timeEl.textContent = '00:00';
     won = false; hints = 3; hintBadge.textContent = hints; clearHints();
     const steps = Math.max(70, size * size * 10);
     let prevPos = -1;
@@ -766,15 +947,46 @@
     lockInput = false;
   }
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-  function startTimer() { startTs = performance.now(); timerHandle = setInterval(tickTimer, 200); }
-  function stopTimer() { if (timerHandle) { clearInterval(timerHandle); timerHandle = null; } }
-  function tickTimer() { if (startTs !== null) timeEl.textContent = fmtTime(performance.now() - startTs); }
-  function elapsedMs() { return startTs === null ? 0 : performance.now() - startTs; }
+  function startTimer() {
+    accumulatedMs = 0;
+    lastResumeTs = performance.now();
+    timerHandle = setInterval(tickTimer, 200);
+  }
+  function stopTimer() {
+    // 누적 시간 확정 후 interval 정지 (라운드 종료 시 호출)
+    if (lastResumeTs !== null) {
+      accumulatedMs += performance.now() - lastResumeTs;
+      lastResumeTs = null;
+    }
+    if (timerHandle) { clearInterval(timerHandle); timerHandle = null; }
+  }
+  function tickTimer() { timeEl.textContent = fmtTime(elapsedMs()); }
+  function elapsedMs() {
+    return accumulatedMs + (lastResumeTs === null ? 0 : performance.now() - lastResumeTs);
+  }
+  // 화면 가시성 변화에 따라 타이머 pause/resume — 백그라운드에서 시간이 부풀어 베스트 기록이 깨지는 문제 방지
+  function pauseTimer() {
+    if (lastResumeTs !== null) {
+      accumulatedMs += performance.now() - lastResumeTs;
+      lastResumeTs = null;
+    }
+  }
+  function resumeTimer() {
+    // 게임 진행 중(미완료 + Play 화면 활성 + 이전에 시작한 적 있음)에만 재개
+    if (lastResumeTs === null && !won && playScreen.classList.contains('active') && (accumulatedMs > 0 || timerHandle !== null)) {
+      lastResumeTs = performance.now();
+    }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) pauseTimer();
+    else resumeTimer();
+  });
 
   function clearHints() { boardEl.querySelectorAll('.tile.hint').forEach(el => el.classList.remove('hint')); }
   function showHint() {
     if (lockInput || won || hints <= 0) return;
-    clearHints();
+    // 이미 hint 표시 중(아직 다음 이동 안 함)이면 재클릭은 무효 — 같은 결과 다시 보여주는데 카운트 차감 방지
+    if (boardEl.querySelector('.tile.hint')) return;
     const candidates = neighborsOf(emptyPos).map(p => ({ p, val: tiles[p] })).filter(x => x.val > 0);
     if (!candidates.length) return;
     candidates.sort((a, b) => manhattanAfterMove(a.p) - manhattanAfterMove(b.p));
@@ -987,6 +1199,26 @@
   $('shuffleBtn').addEventListener('click', () => { pulse($('shuffleBtn')); shuffle(true); });
   undoBtn.addEventListener('click', () => { pulse(undoBtn); undo(); });
   hintBtn.addEventListener('click', () => { pulse(hintBtn); showHint(); });
+  // 디버그 모달 — 빠른 win 등 테스트 (production에서도 유지, 사용자 명시 추가)
+  const debugModal = $('debugModal');
+  $('debugBtn').addEventListener('click', () => { debugModal.classList.add('active'); });
+  debugModal.addEventListener('click', (e) => { if (e.target === debugModal) debugModal.classList.remove('active'); });
+  $('debugWinBtn').addEventListener('click', () => {
+    debugModal.classList.remove('active');
+    if (!won && playScreen.classList.contains('active')) onSolved();
+  });
+  // 디버그 next — input 사이즈로 무한 모드 시작 (예: 10 입력 → 10×10)
+  function debugGotoSize() {
+    const inputEl = $('debugSizeInput');
+    const n = parseInt(inputEl.value, 10);
+    if (!Number.isFinite(n) || n < 3 || n > 15) return;
+    debugModal.classList.remove('active');
+    imageMode = false; currentImage = null; infiniteMode = true;
+    startGame(n);
+    inputEl.value = '';
+  }
+  $('debugNextBtn').addEventListener('click', debugGotoSize);
+  $('debugSizeInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') debugGotoSize(); });
   $('againBtn').addEventListener('click', () => {
     if (infiniteMode) {
       size = size + 1;
@@ -1006,6 +1238,8 @@
     size = size === 3 ? 4 : 3; updateDiffLabel(); shuffle(true);
   });
   $('settingsBtn').addEventListener('click', () => alert('설정은 다음 버전에서 연결하면 됩니다.'));
+  // 데일리 챌린지 진입 placeholder (동작은 후속)
+  $('dailyCard').addEventListener('click', () => alert('데일리 챌린지 — 곧 추가 예정'));
 
   document.addEventListener('keydown', (e) => {
     if (!playScreen.classList.contains('active')) return;
