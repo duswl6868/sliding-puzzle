@@ -249,6 +249,52 @@
     border-color: var(--blue);
     box-shadow: 0 6px 16px rgba(24,119,255,.28);
   }
+  /* 통계 화면 */
+  #statsScreen .topbar { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; margin-bottom: clamp(14px, 4vw, 18px); }
+  #statsScreen .center-title { font-size: clamp(17px, 5vw, 21px); }
+  .stats-summary {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-radius: 18px;
+    padding: clamp(14px, 4vw, 18px) clamp(6px, 2vw, 12px);
+    margin-bottom: clamp(18px, 5vw, 24px);
+  }
+  .stats-summary-cell { display: flex; flex-direction: column; align-items: center; gap: 5px; position: relative; padding: 0 4px; }
+  .stats-summary-cell svg { width: clamp(18px, 4.5vw, 22px); height: clamp(18px, 4.5vw, 22px); color: #94a4ba; margin-bottom: 2px; }
+  .stats-summary-cell + .stats-summary-cell::before {
+    content: ""; position: absolute; left: 0; top: 14%; bottom: 14%;
+    width: 1px; background: var(--line);
+  }
+  .stats-summary-cell label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .04em; }
+  .stats-summary-cell b { font-size: clamp(15px, 4.4vw, 19px); font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .stats-section-title { margin: 0 0 10px; font-size: 12px; font-weight: 800; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+  #statsSizeList { display: flex; flex-direction: column; gap: 10px; }
+  .stats-size-card {
+    background: linear-gradient(145deg, rgba(255,255,255,.76), rgba(255,255,255,.42));
+    border: 1px solid rgba(255,255,255,.72);
+    box-shadow: 0 8px 20px rgba(35,55,90,.07);
+    -webkit-backdrop-filter: blur(16px) saturate(150%);
+    backdrop-filter: blur(16px) saturate(150%);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: grid; grid-template-columns: 82px 1fr; gap: 14px; align-items: center;
+  }
+  .stats-size-label { font-size: clamp(18px, 5vw, 22px); font-weight: 800; color: var(--blue); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+  .stats-size-rows { display: grid; grid-template-columns: auto 1fr; gap: 5px 14px; font-size: 13px; }
+  .stats-size-rows .k { color: var(--muted); font-weight: 600; }
+  .stats-size-rows .v { color: var(--ink); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .stats-empty { color: var(--muted); font-size: 13px; padding: 14px; text-align: center; }
+  .stats-footer { margin-top: clamp(24px, 6vw, 36px); margin-bottom: clamp(20px, 5vw, 32px); display: flex; flex-direction: column; gap: 14px; align-items: center; }
+  .stats-note { font-size: 12px; color: var(--muted); margin: 0; text-align: center; }
+  .stats-reset-btn {
+    border: 1px solid rgba(196,42,42,.32);
+    background: rgba(255,255,255,.6);
+    color: #b32e2e;
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-size: 13px; font-weight: 700; font-family: inherit;
+    cursor: pointer; letter-spacing: .02em;
+  }
+  .stats-reset-btn:active { transform: scale(.97); }
   .icon-btn {
     width: 44px; height: 44px; border: 0; background: transparent; border-radius: 16px;
     display: grid; place-items: center; color: var(--ink); cursor: pointer;
@@ -459,7 +505,8 @@
     color: white;
   }
   .infinity-thumb svg { width: clamp(24px, 8vw, 32px); height: clamp(16px, 5.4vw, 22px); }
-  .home-stats { margin: clamp(20px, 6vw, 46px) 0 0; border-radius: 20px; min-height: clamp(78px, 20vw, 104px); display:grid; grid-template-columns: repeat(3,1fr); overflow:hidden; }
+  .home-stats { margin: clamp(20px, 6vw, 46px) 0 0; border-radius: 20px; min-height: clamp(78px, 20vw, 104px); display:grid; grid-template-columns: repeat(3,1fr); overflow:hidden; cursor: pointer; transition: transform 100ms var(--ease); }
+  .home-stats:active { transform: scale(.985); }
   .home-stat { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; position:relative; padding: 8px 6px; }
   .home-stat + .home-stat::before { content:""; position:absolute; left:0; top:18%; bottom:18%; width:1px; background: var(--line); }
   .home-stat svg { width: clamp(18px, 4.5vw, 22px); height: clamp(18px, 4.5vw, 22px); color: #94a4ba; margin-bottom: 2px; }
@@ -649,7 +696,7 @@
         <button class="difficulty-card glass-card" id="photoCard"><div><div class="label">내 사진 퍼즐</div><div class="sub">사진을 골라 직접 만들기</div></div><div class="photo-thumb" id="photoThumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5h-5L7.5 7.5H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2.5L14.5 5z"/><circle cx="12" cy="13" r="3.2"/></svg></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       </div>
       <input type="file" id="photoInput" accept="image/*" style="display:none" />
-      <div class="home-stats glass-card">
+      <div class="home-stats glass-card" id="homeStatsCard" role="button" tabindex="0" aria-label="통계 보기">
         <div class="home-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10"/><path d="M10 20V5"/><path d="M15 20v-8"/><path d="M20 20V8"/></svg><div class="cap">오늘 플레이</div><div class="val" id="todayCount">0</div></div>
         <div class="home-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg><div class="cap">최고 기록</div><div class="val" id="bestTime">--:--</div></div>
         <div class="home-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg><div class="cap">완료</div><div class="val" id="completeCount">0</div></div>
@@ -684,6 +731,40 @@
     <section class="win-head"><h2>완성!</h2><p><b id="winTime">00:00</b><span>|</span><b id="winMoves">0 이동</b></p></section>
     <div class="board-wrap"><div class="board" id="winBoard" aria-hidden="true"></div></div>
     <div class="win-actions"><button class="primary-cta" id="againBtn">다시 플레이</button><button class="secondary-cta" id="retryBtn" style="display:none">다시하기</button><button class="link-btn" id="homeBtn">메인으로</button></div>
+  </main>
+
+  <main class="screen" id="statsScreen">
+    <header class="topbar">
+      <button class="icon-btn" id="statsBackBtn" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="center-title"><span>통계</span></div>
+      <span></span>
+    </header>
+    <section class="stats-summary glass-card">
+      <div class="stats-summary-cell">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10"/><path d="M10 20V5"/><path d="M15 20v-8"/><path d="M20 20V8"/></svg>
+        <label>오늘</label><b id="statToday">0</b>
+      </div>
+      <div class="stats-summary-cell">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg>
+        <label>최고</label><b id="statMaxSize">—</b>
+      </div>
+      <div class="stats-summary-cell">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg>
+        <label>완료</label><b id="statTotalClears">0</b>
+      </div>
+      <div class="stats-summary-cell">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+        <label>연속</label><b id="statStreak">0일</b>
+      </div>
+    </section>
+    <section class="stats-sizes">
+      <h3 class="stats-section-title">사이즈별 기록</h3>
+      <div id="statsSizeList"></div>
+    </section>
+    <footer class="stats-footer">
+      <p class="stats-note">사진 퍼즐은 기록되지 않습니다 (메모리 휘발)</p>
+      <button class="stats-reset-btn" id="statsResetBtn">통계 초기화</button>
+    </footer>
   </main>
 
   <!-- 디버그 모달 — 빈공간(backdrop) 클릭으로 닫기 -->
@@ -760,6 +841,7 @@
   const homeScreen = $('homeScreen');
   const playScreen = $('playScreen');
   const winScreen = $('winScreen');
+  const statsScreen = $('statsScreen');
   const boardEl = $('board');
   const winBoardEl = $('winBoard');
   const timeEl = $('time');
@@ -770,12 +852,44 @@
   const hintBadge = $('hintBadge');
 
   function todayKey() { return new Date().toISOString().slice(0,10); }
-  function defaultStore() { return { v:1, lastSize:3, best:{}, today:{ date: todayKey(), plays: 0 }, completed: 0 }; }
+  function yesterdayKey(dateStr) {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() - 1);
+    return d.toISOString().slice(0,10);
+  }
+  // LS 스키마 v2 — v1 마이그레이션 자동 처리.
+  // stats: 사이즈별 누적 (평균/완료율 계산), dailyLog: 일별 plays/clears 시계열(그래프용), streak: 연속 완료
+  function defaultStore() {
+    return {
+      v: 2,
+      lastSize: 3,
+      best: {},
+      stats: {},
+      today: { date: todayKey(), plays: 0 },
+      completed: 0,
+      dailyLog: {},
+      streak: { current: 0, longest: 0, lastClearDate: null }
+    };
+  }
   function loadLS() {
     try {
       const raw = localStorage.getItem(LS_KEY);
-      const obj = raw ? JSON.parse(raw) : defaultStore();
-      if (!obj || obj.v !== 1) return defaultStore();
+      if (!raw) return defaultStore();
+      const obj = JSON.parse(raw);
+      if (!obj || typeof obj !== 'object') return defaultStore();
+      // v1 → v2 마이그레이션 (best/today/completed/lastSize는 유지, 신규 필드만 채움)
+      if (obj.v === 1) {
+        obj.v = 2;
+        obj.stats = obj.stats || {};
+        obj.dailyLog = obj.dailyLog || {};
+        obj.streak = obj.streak || { current: 0, longest: 0, lastClearDate: null };
+      }
+      if (obj.v !== 2) return defaultStore();
+      // 누락 필드 방어 (LS 변조/구버전 잔재 대응)
+      if (!obj.best) obj.best = {};
+      if (!obj.stats) obj.stats = {};
+      if (!obj.dailyLog) obj.dailyLog = {};
+      if (!obj.streak) obj.streak = { current: 0, longest: 0, lastClearDate: null };
       if (!obj.today || obj.today.date !== todayKey()) obj.today = { date: todayKey(), plays: 0 };
       return obj;
     } catch { return defaultStore(); }
@@ -783,19 +897,60 @@
   function saveLS(s) { try { localStorage.setItem(LS_KEY, JSON.stringify(s)); } catch {} }
   function mutateLS(fn) { const s = loadLS(); fn(s); saveLS(s); renderHomeStats(); }
   function bestKey() { return String(size); }
+  // 사이즈별 stats 슬롯이 없으면 초기화
+  function ensureStats(s, k) {
+    if (!s.stats[k]) s.stats[k] = { attempts: 0, clears: 0, totalTimeMs: 0, totalMoves: 0, lastClearTs: null };
+    return s.stats[k];
+  }
+  // 일별 dailyLog 슬롯이 없으면 초기화
+  function ensureDaily(s, dateStr) {
+    if (!s.dailyLog[dateStr]) s.dailyLog[dateStr] = { plays: 0, clears: 0 };
+    return s.dailyLog[dateStr];
+  }
   function setBestIfBetter(timeMs, moveCount) {
+    if (imageMode) return false; // 사진 모드는 LS 미반영 (정책: 메모리 휘발)
     let isNew = false;
+    const today = todayKey();
     mutateLS(s => {
       const k = bestKey();
       const prev = s.best[k];
-      if (!prev || timeMs < prev.timeMs) { s.best[k] = { timeMs, moves: moveCount }; isNew = true; }
+      if (!prev || timeMs < prev.timeMs) { s.best[k] = { timeMs, moves: moveCount, date: today }; isNew = true; }
+      // 사이즈별 누적 통계
+      const st = ensureStats(s, k);
+      st.clears = (st.clears || 0) + 1;
+      st.totalTimeMs = (st.totalTimeMs || 0) + timeMs;
+      st.totalMoves = (st.totalMoves || 0) + moveCount;
+      st.lastClearTs = Date.now();
+      // 일별 clears
+      ensureDaily(s, today).clears += 1;
+      // streak — 마지막 클리어 날짜와 비교
+      if (!s.streak) s.streak = { current: 0, longest: 0, lastClearDate: null };
+      if (s.streak.lastClearDate === today) {
+        // 오늘 이미 클리어한 적 있음 — current 유지
+      } else if (s.streak.lastClearDate === yesterdayKey(today)) {
+        s.streak.current = (s.streak.current || 0) + 1;
+      } else {
+        s.streak.current = 1;
+      }
+      s.streak.longest = Math.max(s.streak.longest || 0, s.streak.current);
+      s.streak.lastClearDate = today;
       s.completed = (s.completed || 0) + 1;
       s.lastSize = size;
     });
     return isNew;
   }
   function rememberSize() { mutateLS(s => { s.lastSize = size; }); }
-  function countPlay() { mutateLS(s => { s.today.plays = (s.today.plays || 0) + 1; }); }
+  // 셔플 시작 시 호출 — today.plays + dailyLog.plays + stats[size].attempts 모두 증가
+  function countPlay() {
+    if (imageMode) return; // 사진 모드는 LS 미반영 (정책: 메모리 휘발)
+    const today = todayKey();
+    mutateLS(s => {
+      s.today.plays = (s.today.plays || 0) + 1;
+      ensureDaily(s, today).plays += 1;
+      const st = ensureStats(s, bestKey());
+      st.attempts = (st.attempts || 0) + 1;
+    });
+  }
 
   function fmtTime(ms) {
     const sec = Math.floor(ms / 1000);
@@ -810,9 +965,70 @@
     const best = s.best?.[String(s.lastSize || size)] || s.best?.[String(size)];
     $('bestTime').textContent = best ? fmtTime(best.timeMs) : '--:--';
   }
+  // 통계 페이지 렌더링 — LS 전체를 읽어 요약 + 사이즈별 카드 그리기
+  function renderStats() {
+    const s = loadLS();
+    // 요약
+    $('statTotalClears').textContent = String(s.completed || 0);
+    const sizeKeys = Object.keys(s.best || {}).map(Number).filter(n => Number.isFinite(n) && n >= 3);
+    const maxSize = sizeKeys.length ? Math.max(...sizeKeys) : 0;
+    $('statMaxSize').textContent = maxSize ? `${maxSize}×${maxSize}` : '—';
+    $('statToday').textContent = String(s.today?.plays || 0);
+    const cur = s.streak?.current || 0;
+    const lon = s.streak?.longest || 0;
+    $('statStreak').textContent = lon > cur ? `${cur}일 (최장 ${lon})` : `${cur}일`;
+    // 사이즈별 카드 — best 또는 stats에 한 번이라도 등장한 모든 사이즈를 합쳐서 정렬
+    const allKeys = new Set([
+      ...Object.keys(s.best || {}),
+      ...Object.keys(s.stats || {}),
+    ].map(Number).filter(n => Number.isFinite(n) && n >= 3));
+    const sorted = [...allKeys].sort((a, b) => a - b);
+    const listEl = $('statsSizeList');
+    listEl.innerHTML = '';
+    if (!sorted.length) {
+      const empty = document.createElement('div');
+      empty.className = 'stats-empty';
+      empty.textContent = '아직 기록이 없어요. 한 판 풀어보세요!';
+      listEl.appendChild(empty);
+      return;
+    }
+    for (const n of sorted) {
+      const k = String(n);
+      const best = s.best?.[k];
+      const st = s.stats?.[k] || { attempts: 0, clears: 0, totalTimeMs: 0, totalMoves: 0 };
+      const avgTime = st.clears ? Math.round(st.totalTimeMs / st.clears) : null;
+      const avgMoves = st.clears ? Math.round(st.totalMoves / st.clears) : null;
+      const card = document.createElement('div');
+      card.className = 'stats-size-card';
+      const label = document.createElement('div');
+      label.className = 'stats-size-label';
+      label.textContent = `${n}×${n}`;
+      const rows = document.createElement('div');
+      rows.className = 'stats-size-rows';
+      const lines = [
+        ['최단', best ? `${fmtTime(best.timeMs)} · ${best.moves}수` : '—'],
+        ['평균', avgTime !== null ? `${fmtTime(avgTime)} · ${avgMoves}수` : '—'],
+        ['완료', `${st.clears || 0} / ${st.attempts || 0}`],
+      ];
+      for (const [kk, vv] of lines) {
+        const ke = document.createElement('span'); ke.className = 'k'; ke.textContent = kk;
+        const ve = document.createElement('span'); ve.className = 'v'; ve.textContent = vv;
+        rows.appendChild(ke); rows.appendChild(ve);
+      }
+      card.appendChild(label); card.appendChild(rows);
+      listEl.appendChild(card);
+    }
+  }
+  function openStats() { renderStats(); show(statsScreen); }
+  function resetStats() {
+    if (!confirm('모든 통계 기록을 초기화합니다. 되돌릴 수 없어요. 계속할까요?')) return;
+    saveLS(defaultStore());
+    renderHomeStats();
+    renderStats();
+  }
 
   function show(screen) {
-    [homeScreen, playScreen, winScreen].forEach(el => el.classList.remove('active'));
+    [homeScreen, playScreen, winScreen, statsScreen].forEach(el => el.classList.remove('active'));
     screen.classList.add('active');
     requestAnimationFrame(() => {
       sizeFonts();
@@ -1345,6 +1561,11 @@
   $('settingsBtn').addEventListener('click', () => alert('설정은 다음 버전에서 연결하면 됩니다.'));
   // 데일리 챌린지 진입 placeholder (동작은 후속)
   $('dailyCard').addEventListener('click', () => alert('데일리 챌린지 — 곧 추가 예정'));
+  // 통계 진입 — 홈 하단 home-stats 카드 클릭
+  $('homeStatsCard').addEventListener('click', openStats);
+  $('homeStatsCard').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openStats(); } });
+  $('statsBackBtn').addEventListener('click', () => { show(homeScreen); renderHomeStats(); });
+  $('statsResetBtn').addEventListener('click', resetStats);
 
   document.addEventListener('keydown', (e) => {
     if (!playScreen.classList.contains('active')) return;

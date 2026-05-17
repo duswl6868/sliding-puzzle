@@ -29,7 +29,7 @@ sliding_puzzle/
 | 입력 | 인접 타일 탭 + 화살표 키 + 모바일 스와이프 |
 | 셔플 | 완성 상태에서 합법 이동 N회 (항상 solvable). N = `max(70, size² × 10)` |
 | 기록 | 시간 + 이동. best는 사이즈별 시간 단축 시 갱신 |
-| 저장 | LocalStorage 단일 키 `sliding_puzzle_glass_v1` |
+| 저장 | LocalStorage 단일 키 `sliding_puzzle_glass_v1` (내부 스키마 `v: 2`, 자동 마이그레이션) |
 | 사운드 / 진동 | 미적용 |
 
 ## 모드
@@ -78,7 +78,7 @@ sliding_puzzle/
   2. **4 × 4** — 15 퍼즐, mini-grid 시각화
   3. **무한의 퍼즐** — 보라 그라디언트 ∞ 썸네일
   4. **내 사진 퍼즐** — 블루 그라디언트 카메라 썸네일 (이미지 선택 후 썸네일로 교체)
-- 하단 home-stats 글라스 카드 (3컬럼): `오늘 플레이` / `최고 기록` / `완료`
+- 하단 home-stats 글라스 카드 (3컬럼, **클릭 시 통계 화면 진입**): `오늘 플레이` / `최고 기록` / `완료`
 
 ### Play (`#playScreen`)
 - 상단 topbar: ← 뒤로 / 중앙 인디케이터 / 디버그 + ↻ 다시하기
@@ -95,6 +95,14 @@ sliding_puzzle/
 - 액션 영역 (모드별):
   - 일반: `다시 플레이` (primary) / `메인으로` (링크)
   - 무한: `다음 (N+1 × N+1)` (primary) / `다시하기` (secondary 글라스) / `홈` (링크)
+
+### Stats (`#statsScreen`)
+- 진입: 홈 하단 `home-stats` 카드 클릭(`role="button"`, 키보드 Enter/Space 지원). 좌상단 ← 뒤로 → 홈
+- 상단 요약 카드 (`.stats-summary` glass-card, 4컬럼 구분선): **오늘 / 최고 / 완료 / 연속** — 외부 home-stats 순서와 일치. 각 셀에 SVG 아이콘 (bar / clock / trophy / flame), 색상 `#94a4ba` (외부 home-stat 톤과 통일)
+- 사이즈별 카드 리스트 (`.stats-size-card`): 최단(시간·이동), 평균(시간·이동), 완료(clears/attempts)
+  - 표시 대상 = `best` 키 ∪ `stats` 키 (한 번이라도 attempt 또는 clear가 있는 사이즈), 오름차순. 비어있으면 안내 문구.
+- 푸터: "사진 퍼즐은 기록되지 않습니다" 안내 + **통계 초기화** (confirm 후 `defaultStore()`로 reset)
+- 그래프 화면(히트맵/추이)은 v3 — 현재는 `dailyLog`로 시계열만 축적
 
 ## 디자인 토큰 (라이트 글라스)
 
@@ -238,33 +246,57 @@ backdrop-filter: blur(18px) saturate(150%);
 
 ## 데이터 모델 (LocalStorage)
 
-키: `sliding_puzzle_glass_v1`
+키: `sliding_puzzle_glass_v1` (값 내부 `v: 2`로 스키마 버전 표시. 키명은 호환성 위해 유지)
 
 ```ts
 {
-  v: 1,
-  lastSize: 3 | 4 | 5 | 6 | ...,    // 무한 모드에서 5+ 가능
+  v: 2,
+  lastSize: 3 | 4 | 5 | 6 | ...,
   best: {
-    "3": { timeMs, moves },
-    "4": { ... },
-    "5": { ... },
-    // 사이즈별 자동 생성
+    "3": { timeMs, moves, date: "YYYY-MM-DD" },   // 최단 시간 기록 + 갱신 날짜
+    ...
+  },
+  // 사이즈별 누적 통계 — 평균/완료율 계산용
+  stats: {
+    "3": {
+      attempts: number,      // 시작한 판 수 (셔플 발생 시 +1)
+      clears: number,        // 완료한 판 수
+      totalTimeMs: number,   // 완료된 판의 시간 누적
+      totalMoves: number,    // 완료된 판의 이동 누적
+      lastClearTs: number|null  // 마지막 클리어 timestamp(ms)
+    },
+    ...
   },
   today: { date: "YYYY-MM-DD", plays },   // 날짜 바뀌면 자동 초기화
-  completed: number                        // 누적 완료 횟수
+  completed: number,                       // 누적 완료 (sum of stats[*].clears)
+  // 일별 활동 — 향후 히트맵/그래프용 시계열
+  dailyLog: {
+    "YYYY-MM-DD": { plays: number, clears: number },
+    ...
+  },
+  // 연속 완료
+  streak: {
+    current: number,
+    longest: number,
+    lastClearDate: "YYYY-MM-DD"|null
+  }
 }
 ```
 
+- 마이그레이션: v1 데이터를 `loadLS()`에서 자동 v2로 변환 (`best/today/completed/lastSize` 유지, `stats/dailyLog/streak`는 빈 값으로 신규 축적 시작)
 - 파싱 실패 / 버전 불일치 시 `defaultStore()`로 폴백
-- 사진 모드는 LS에 안 저장 (메모리 휘발)
+- **사진 모드는 LS에 안 저장 (메모리 휘발)** — `countPlay`/`setBestIfBetter`에서 `imageMode` 가드로 모든 통계 미반영
 - `mutateLS(fn)`으로 일관된 read-modify-write 후 `renderHomeStats()` 갱신
+- 갱신 지점:
+  - **셔플 시작**(`countPlay`): `today.plays`, `dailyLog[today].plays`, `stats[size].attempts` +1
+  - **클리어**(`setBestIfBetter`): `best[size]` 단축 시 갱신, `stats[size].{clears, totalTimeMs, totalMoves, lastClearTs}`, `dailyLog[today].clears`, `streak.{current, longest, lastClearDate}`, `completed` +1
+  - **통계 초기화**(`resetStats`): `defaultStore()`로 전체 reset (confirm 후)
 
 ## 의도적 제외 (v1)
 
 - 사운드 / 진동
-- 다크 테마 토글
 - 5×5 이상 **홈 카드** (5+는 게임 화면 사이즈 선택 모달 또는 무한 모드로 도달)
-- 그라디언트 / 패턴 모드 (이전 다크 버전 기능, 제거)
+- 그라디언트 / 패턴 모드
 - 클라우드 동기화
 - 행/열 동시 슬라이드 (한 번에 한 타일)
 - 이미지 크롭 UI (자동 가운데 크롭만)
