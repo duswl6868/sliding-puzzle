@@ -620,6 +620,45 @@
   .win-head h2 { margin:0 0 12px; color: var(--blue); font-size: clamp(22px, 7vw, 30px); font-weight:900; letter-spacing:-.02em; }
   .win-head p { margin:0; font-size: clamp(15px, 4.6vw, 20px); font-weight:850; color:#1f314d; }
   .win-head p span { color:#93a0b2; padding: 0 12px; }
+  /* 신기록 연출 (.is-best 클래스 토글) */
+  .best-badge {
+    display: none;
+    position: relative;
+    overflow: hidden;
+    margin: 0 auto 14px;
+    padding: 6px 14px 6px 11px;
+    font-size: 11px; font-weight: 800; letter-spacing: .14em;
+    color: #9c6e10;
+    background: linear-gradient(145deg, rgba(255,213,99,.36), rgba(255,194,77,.20));
+    border: 1px solid rgba(245,183,58,.55);
+    border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(214,158,40,.18), inset 0 1px 0 rgba(255,255,255,.7);
+    align-items: center; gap: 6px;
+  }
+  .best-badge svg { width: 13px; height: 13px; stroke: currentColor; position: relative; z-index: 1; }
+  /* 대각선 shine — 알약 안쪽을 좌→우로 슥 지나가며 loop. 두꺼운 빛 띠 */
+  .best-badge::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 60%; height: 100%;
+    background: linear-gradient(105deg, transparent 15%, rgba(255,255,255,.72) 50%, transparent 85%);
+    transform: translateX(-150%);
+    pointer-events: none;
+  }
+  .best-badge.show { display: inline-flex; animation: badge-pop 600ms var(--ease) both; }
+  .best-badge.show::after { animation: badge-shine 2.6s linear 600ms infinite; }
+  @keyframes badge-pop { 0% { opacity: 0; transform: scale(.7) translateY(-4px); } 60% { transform: scale(1.06); } 100% { opacity: 1; transform: scale(1); } }
+  @keyframes badge-shine {
+    0%   { transform: translateX(-150%); }
+    35%  { transform: translateX(450%); }
+    100% { transform: translateX(450%); }
+  }
+  #winTime.is-best { color: #c8901a; animation: best-pulse 700ms var(--ease) both; }
+  @keyframes best-pulse { 0% { transform: scale(1); } 35% { transform: scale(1.16); } 100% { transform: scale(1); } }
+  .win-head .best-delta { display: none; margin: 6px 0 0; font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+  .win-head .best-delta.show { display: block; animation: delta-fade 500ms 220ms var(--ease) both; }
+  @keyframes delta-fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
   .win-actions { padding: 44px 2px 0; display:flex; flex-direction:column; gap:22px; }
   .primary-cta { height: clamp(50px, 14vw, 60px); border:0; border-radius: 12px; cursor:pointer; color:#fff; font-size: clamp(15px, 4.5vw, 18px); font-weight:800; background: linear-gradient(180deg, #2b91ff 0%, #1170f6 100%); box-shadow: 0 16px 28px rgba(24,119,255,.28), inset 0 1px 0 rgba(255,255,255,.34); }
   .secondary-cta {
@@ -663,7 +702,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .tile, .tool-btn, .icon-btn, .difficulty-card { transition-duration: 0ms !important; }
-    .confetti i, .tool-btn.pop, .secondary-cta.pop, .tile.spawn, .tile.hint { animation: none !important; }
+    .confetti i, .tool-btn.pop, .secondary-cta.pop, .tile.spawn, .tile.hint, .best-badge, .best-badge::after, #winTime.is-best, .best-delta { animation: none !important; }
   }
 </style>
 </head>
@@ -731,7 +770,7 @@
   <main class="screen" id="winScreen">
 
     <div class="confetti" id="confetti"></div>
-    <section class="win-head"><h2>완성!</h2><p><b id="winTime">00:00</b><span>|</span><b id="winMoves">0 이동</b></p></section>
+    <section class="win-head"><span class="best-badge" id="bestBadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg>NEW RECORD</span><h2>완성!</h2><p><b id="winTime">00:00</b><span>|</span><b id="winMoves">0 이동</b></p><p class="best-delta" id="bestDelta"></p></section>
     <div class="board-wrap"><div class="board" id="winBoard" aria-hidden="true"></div></div>
     <div class="win-actions"><button class="primary-cta" id="againBtn">다시 플레이</button><button class="secondary-cta" id="retryBtn" style="display:none">다시하기</button><button class="link-btn" id="homeBtn">메인으로</button></div>
   </main>
@@ -911,12 +950,14 @@
     return s.dailyLog[dateStr];
   }
   function setBestIfBetter(timeMs, moveCount) {
-    if (imageMode) return false; // 사진 모드는 LS 미반영 (정책: 메모리 휘발)
+    if (imageMode) return { isNew: false, prevTimeMs: null }; // 사진 모드는 LS 미반영 (정책: 메모리 휘발)
     let isNew = false;
+    let prevTimeMs = null;
     const today = todayKey();
     mutateLS(s => {
       const k = bestKey();
       const prev = s.best[k];
+      prevTimeMs = prev ? prev.timeMs : null;
       if (!prev || timeMs < prev.timeMs) { s.best[k] = { timeMs, moves: moveCount, date: today }; isNew = true; }
       // 사이즈별 누적 통계
       const st = ensureStats(s, k);
@@ -940,7 +981,7 @@
       s.completed = (s.completed || 0) + 1;
       s.lastSize = size;
     });
-    return isNew;
+    return { isNew, prevTimeMs };
   }
   function rememberSize() { mutateLS(s => { s.lastSize = size; }); }
   // 셔플 시작 시 호출 — today.plays + dailyLog.plays + stats[size].attempts 모두 증가
@@ -1011,7 +1052,7 @@
       const lines = [
         ['최단', best ? `${fmtTime(best.timeMs)} · ${best.moves}수` : '—'],
         ['평균', avgTime !== null ? `${fmtTime(avgTime)} · ${avgMoves}수` : '—'],
-        ['완료', `${st.clears || 0} / ${st.attempts || 0}`],
+        ['완료', `${st.clears || 0}`],
       ];
       for (const [kk, vv] of lines) {
         const ke = document.createElement('span'); ke.className = 'k'; ke.textContent = kk;
@@ -1354,16 +1395,30 @@
     won = true; lockInput = true; updateUndo(); stopTimer();
     const total = Math.round(elapsedMs());
     timeEl.textContent = fmtTime(total);
-    setBestIfBetter(total, moves);
+    const { isNew, prevTimeMs } = setBestIfBetter(total, moves);
     boardEl.querySelectorAll('.tile').forEach(el => el.classList.add('complete'));
-    $('winTime').textContent = fmtTime(total);
+    // win-head: 시간/이동 + 신기록 연출(배지/펄스/단축시간)
+    const winTimeEl = $('winTime');
+    winTimeEl.textContent = fmtTime(total);
+    winTimeEl.classList.toggle('is-best', isNew);
     $('winMoves').textContent = `${moves} 이동`;
+    const badge = $('bestBadge');
+    const delta = $('bestDelta');
+    badge.classList.toggle('show', isNew);
+    if (isNew && prevTimeMs != null && total < prevTimeMs) {
+      const diffSec = Math.max(1, Math.round((prevTimeMs - total) / 1000));
+      delta.textContent = `이전 ${fmtTime(prevTimeMs)} · ${diffSec}초 단축!`;
+      delta.classList.add('show');
+    } else {
+      delta.textContent = '';
+      delta.classList.remove('show');
+    }
     configureWinActions();
     alignWinBoardToPlay();
     setTimeout(() => {
       buildTiles(winBoardEl, true);
       sizeFonts(); layoutSolved(winBoardEl);
-      makeConfetti();
+      makeConfetti(isNew);
       show(winScreen);
 
       // Image mode reveal: place the full photo on the board, then fade tiles out
@@ -1387,17 +1442,41 @@
       lockInput = false;
     }, 300);
   }
-  function makeConfetti() {
+  let confettiTimer = null;
+  function spawnConfettiPiece(c, palette, isBest, delayMs = 0) {
+    const n = document.createElement('i');
+    n.style.left = `${4 + Math.random() * 92}%`;
+    n.style.top = `${-10 + Math.random() * 20}px`;
+    if (delayMs > 0) n.style.animationDelay = `${delayMs}ms`;
+    n.style.animationDuration = isBest ? `${1.4 + Math.random() * 1.0}s` : `${1.6 + Math.random() * 0.6}s`;
+    n.style.transform = `rotate(${Math.random() * 180}deg)`;
+    n.style.background = palette[Math.floor(Math.random() * palette.length)];
+    n.addEventListener('animationend', () => n.remove());
+    c.appendChild(n);
+  }
+  function makeConfetti(isBest = false) {
     const c = $('confetti'); c.innerHTML = '';
-    for (let i = 0; i < 28; i++) {
-      const n = document.createElement('i');
-      n.style.left = `${8 + Math.random() * 84}%`;
-      n.style.top = `${-10 + Math.random() * 20}px`;
-      n.style.animationDelay = `${Math.random() * .55}s`;
-      n.style.transform = `rotate(${Math.random()*180}deg)`;
-      n.style.background = Math.random() > .45 ? '#1877ff' : '#8bbdff';
-      c.appendChild(n);
+    if (confettiTimer) { clearInterval(confettiTimer); confettiTimer = null; }
+    // prefers-reduced-motion 존중 — CSS animation이 비활성이면 element만 쌓이므로 skip
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // 일반: 블루 톤. 신기록: 블루 + 골드 톤 섞기
+    const palette = isBest
+      ? ['#1877ff', '#8bbdff', '#f5b73a', '#ffd66b', '#e89a1a']
+      : ['#1877ff', '#8bbdff'];
+    // 초기 burst (winScreen 진입 임팩트) — 짧은 stagger로 산만한 흩날림
+    const initialCount = isBest ? 60 : 28;
+    for (let i = 0; i < initialCount; i++) {
+      const delay = Math.random() * (isBest ? 800 : 550);
+      spawnConfettiPiece(c, palette, isBest, delay);
     }
+    // 이후 지속 — 화면 머무는 동안 가벼운 흩날림 유지. winScreen 떠나면 자동 정지
+    confettiTimer = setInterval(() => {
+      if (!winScreen.classList.contains('active')) {
+        clearInterval(confettiTimer); confettiTimer = null; return;
+      }
+      const burst = isBest ? 3 : 1;
+      for (let i = 0; i < burst; i++) spawnConfettiPiece(c, palette, isBest);
+    }, 220);
   }
 
   function startGame(newSize = size) {

@@ -90,8 +90,15 @@ sliding_puzzle/
 - **좌측 엣지 스와이프 → 홈** (iOS 스타일 back). `< 28px` 시작 → `> 80px dx`, `< 60px dy`, `< 800ms`. **단 첫 이동 이후(`lastResumeTs !== null || accumulatedMs > 0`)는 차단** — 실수로 진행 손실 방지. ← 뒤로 버튼은 그대로 동작.
 
 ### Win (`#winScreen`)
-- 컨페티 28개 (1.8s fall: translateY + rotate 230deg)
+- 컨페티: **초기 burst** + **지속 흩날림** (winScreen 머무는 동안 매 220ms마다 1~3개 새로). winScreen 떠나면 자동 정지 (`confettiTimer` clearInterval). animationend 시 element 자동 제거 (메모리 누수 방지)
+  - 일반: 초기 28개 (블루 톤, fall 1.6~2.2s) / 지속 1개씩
+  - 신기록: 초기 60개 (블루+골드 톤, fall 1.4~2.4s) / 지속 3개씩
+  - `prefers-reduced-motion` 시 컨페티 자체 skip (CSS도 animation: none)
 - "완성!" + 시간 + 이동 표시
+- **신기록 연출** (`isNew === true`일 때):
+  - `.best-badge` (NEW RECORD, 트로피 아이콘, 골드 톤 글라스 알약) — `badge-pop` 600ms + `::after` 흰색 대각선 **shine loop** (`badge-shine` 2.6s linear infinite, 600ms 지연 후 시작)
+  - `#winTime.is-best` — 골드 색상 + `best-pulse` 700ms (scale 1 → 1.16 → 1)
+  - `.best-delta` — 이전 기록 + 단축 초수 (`이전 01:23 · 12초 단축!`), 220ms 지연 페이드 인. 첫 클리어(prevTimeMs null)일 땐 표시 안 함
 - 솔브드 보드 미리보기 (`#winBoard`)
 - 액션 영역 (모드별):
   - 일반: `다시 플레이` (primary) / `메인으로` (링크)
@@ -179,7 +186,10 @@ backdrop-filter: blur(18px) saturate(150%);
 | 타일 프레스 | `scale(0.965)`, 80ms |
 | 타일 spawn (셔플 직후) | 460ms `--ease`. opacity 0→1 + scale .86→1.035→1.0 + blur 2px→0. staggered 10ms (max 100ms) — 큰 사이즈 시작 응답성 우선 |
 | 다시하기 버튼 press | `soft-pop` 360ms (scale .965 → 1.018 → 1.0) |
-| Win 컨페티 | 28개 `<i>`, 1.8s fall |
+| Win 컨페티 | 초기 burst(28/60개, 짧은 stagger) + 220ms 간격 지속 흩날림. winScreen 떠나면 자동 정지 |
+| Win 신기록 배지 | `badge-pop` 600ms (opacity 0→1 + scale .7→1.06→1) + `badge-shine` 2.6s linear infinite (대각선 흰색 광택이 좌→우로 sweep) |
+| Win 신기록 시간 강조 | `best-pulse` 700ms (scale 1→1.16→1) + 골드 색 |
+| Win 신기록 단축시간 | `delta-fade` 500ms, 220ms 지연 (opacity 0→1 + translateY 4→0) |
 | Difficulty card press | `scale(0.985)`, 130ms |
 | `prefers-reduced-motion` | 모든 전환 0ms, 컨페티·spawn·pop 무효화 |
 
@@ -290,7 +300,7 @@ backdrop-filter: blur(18px) saturate(150%);
 - `mutateLS(fn)`으로 일관된 read-modify-write 후 `renderHomeStats()` 갱신
 - 갱신 지점:
   - **셔플 시작**(`countPlay`): `today.plays`, `dailyLog[today].plays`, `stats[size].attempts` +1
-  - **클리어**(`setBestIfBetter`): `best[size]` 단축 시 갱신, `stats[size].{clears, totalTimeMs, totalMoves, lastClearTs}`, `dailyLog[today].clears`, `streak.{current, longest, lastClearDate}`, `completed` +1
+  - **클리어**(`setBestIfBetter`): `best[size]` 단축 시 갱신, `stats[size].{clears, totalTimeMs, totalMoves, lastClearTs}`, `dailyLog[today].clears`, `streak.{current, longest, lastClearDate}`, `completed` +1. 리턴 `{ isNew, prevTimeMs }` — Win 화면 신기록 연출에 사용
   - **통계 초기화**(`resetStats`): `defaultStore()`로 전체 reset (confirm 후)
 
 ## 의도적 제외 (v1)
