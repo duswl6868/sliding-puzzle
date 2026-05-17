@@ -9,9 +9,9 @@
 <meta name="apple-mobile-web-app-title" content="Puzzle" />
 <title>슬라이딩 퍼즐 - Glass</title>
 <link rel="manifest" href="manifest.webmanifest" />
-<link rel="apple-touch-icon" href="apple-touch-icon-v2.png" />
-<link rel="icon" type="image/png" sizes="180x180" href="apple-touch-icon-v2.png" />
-<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
+<link rel="apple-touch-icon" href="apple-touch-icon-v8.png" />
+<link rel="icon" type="image/png" sizes="180x180" href="apple-touch-icon-v8.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512-v8.png" />
 <style>
   :root {
     --bg0: #f7f9fd;
@@ -258,8 +258,11 @@
   .icon-btn:hover { background: rgba(255,255,255,.48); }
   .icon-btn svg { width: 23px; height: 23px; overflow: visible; }
   .center-title { justify-self:center; display:flex; gap: 7px; align-items:center; font-size: clamp(18px, 5.4vw, 23px); font-weight: 800; letter-spacing: .04em; }
-  .center-title button { border: 0; background: transparent; padding: 0; display:flex; align-items:center; gap:7px; cursor:pointer; }
-  .center-title svg { width: 16px; height: 16px; opacity: .82; }
+  .center-title button { border: 0; background: transparent; padding: 0; display:flex; align-items:center; gap:7px; cursor:pointer; color: var(--ink); }
+  .center-title .chev-down { width: 16px; height: 16px; opacity: .82; }
+  /* 무한 모드: "무한모드" 텍스트만 표시, chevron 숨김. 클릭 비활성. */
+  #sizeCycle.infinite-mode { cursor: default; pointer-events: none; }
+  #sizeCycle.infinite-mode .chev-down { display: none; }
 
   .home-top {
     flex: 1;
@@ -658,7 +661,7 @@
 
     <div class="topbar">
       <button class="icon-btn" id="backBtn" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-      <div class="center-title"><button id="sizeCycle" aria-label="난이도 변경"><span id="diffLabel">3 × 3</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
+      <div class="center-title"><button id="sizeCycle" aria-label="난이도 변경"><span id="diffLabel">3 × 3</span><svg class="chev-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button></div>
       <div class="topbar-right">
         <button class="icon-btn debug-btn" id="debugBtn" aria-label="디버그"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.121 2.121 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></button>
         <button class="icon-btn" id="newGame" aria-label="다시 셔플"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
@@ -817,7 +820,11 @@
       if (screen === winScreen) layoutSolved(winBoardEl);
     });
   }
-  function updateDiffLabel() { diffLabel.textContent = `${size} × ${size}`; }
+  function updateDiffLabel() {
+    diffLabel.textContent = infiniteMode ? '무한모드' : `${size} × ${size}`;
+    // 무한 모드는 chevron 숨김 + 클릭 비활성
+    $('sizeCycle').classList.toggle('infinite-mode', infiniteMode);
+  }
   function posToRC(pos) { return { row: Math.floor(pos / size), col: pos % size }; }
   function rcToPos(row, col) { return row * size + col; }
   function tileSize(board = boardEl) { const GAP = gapFor(); const boardPx = board.clientWidth; return (boardPx - GAP * (size + 1)) / size; }

@@ -8,13 +8,13 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "apple-touch-icon-v2.png",
+      "src": "apple-touch-icon-v8.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "icon-512.png",
+      "src": "icon-512-v8.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

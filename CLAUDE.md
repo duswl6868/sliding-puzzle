@@ -6,10 +6,11 @@
 
 ```
 sliding_puzzle/
-  index.html              # 마크업·스타일·로직 전부
-  manifest.webmanifest    # PWA 설치 메타
-  apple-touch-icon.png    # iOS 홈 화면 아이콘 (180×180)
-  CLAUDE.md               # 본 문서 (스펙)
+  index.html                  # 마크업·스타일·로직 전부
+  manifest.webmanifest        # PWA 설치 메타
+  apple-touch-icon-v8.png     # iOS 홈 화면 아이콘 (180×180). 파일명 vN으로 캐시 무효화
+  icon-512-v8.png             # PWA 큰 아이콘 (512×512, any/maskable). 원본을 크롭 없이 직접 리사이즈 (꽉 찬 톤)
+  CLAUDE.md                   # 본 문서 (스펙)
 ```
 
 ## 실행 / 배포
@@ -42,7 +43,7 @@ sliding_puzzle/
 ### 무한의 퍼즐
 - 3×3부터 시작 → 완성 win 화면 → `다음 (N+1 × N+1)` / `다시하기` / `홈` 세로 배치
 - 다음 누르면 사이즈 +1 후 새 게임. 끝없이 진행
-- 헤더 ▼ 사이즈 토글은 무효 (모드 보호)
+- 헤더 중앙은 `N × N ▼` 대신 **"무한모드"** 텍스트로 대체 (chevron 숨김 + 버튼 아님 — pointer-events 차단). 모드 보호 + 시각적 모드 식별
 - ← 뒤로 / 홈 누르면 무한 모드 종료
 
 ### 내 사진 퍼즐
@@ -80,7 +81,9 @@ sliding_puzzle/
 - 하단 home-stats 글라스 카드 (3컬럼): `오늘 플레이` / `최고 기록` / `완료`
 
 ### Play (`#playScreen`)
-- 상단 topbar: ← 뒤로 / `N × N ▼` (일반 모드에선 사이즈 선택 모달 / 무한 모드에선 무효) / 디버그 + ↻ 다시하기
+- 상단 topbar: ← 뒤로 / 중앙 인디케이터 / 디버그 + ↻ 다시하기
+  - 일반 모드: `N × N ▼` 버튼 → 사이즈 선택 모달
+  - 무한 모드: **"무한모드" 텍스트** (chevron 숨김, 버튼 아님 — `pointer-events: none` + cursor default). `#sizeCycle.infinite-mode` 클래스로 토글
 - stats-row: 시간 (좌) / 이동 (우) — 라벨 12px + 값 17px 굵게
 - 보드 (글라스 카드, slate 빈칸 비침)
 - 하단 플로팅 toolbar (글라스 카드, position: fixed): `↶ 되돌리기` / `💡 힌트 (badge)` / `↻ 다시하기` (셔플 아이콘 유지 + 라벨만 "다시하기" — Win 화면 "다시 플레이"와 톤 통일, 사용자 의도와 직접 매칭)
