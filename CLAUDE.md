@@ -98,7 +98,7 @@ sliding_puzzle/
   - 무한: `다음 (N+1 × N+1)` (primary) / `다시하기` (secondary 글라스) / `홈` (링크)
 
 ### Stats (`#statsScreen`)
-- 진입: 홈 하단 `home-stats` 카드 클릭(`role="button"`, 키보드 Enter/Space 지원). 좌상단 ← 뒤로 / **좌측 엣지 스와이프(< 28px → 80px, < 60px Y, < 800ms)** 도 동일 동작 (`attachEdgeSwipeBack`)
+- 진입: 홈 하단 `home-stats` **native `<button>`** 클릭 (스크롤 직후에도 click이 안정적으로 발화. div+role 합성 click 누락 문제 회피). 좌상단 ← 뒤로 / **좌측 엣지 스와이프(< 28px → 80px, < 60px Y, < 800ms)** 도 동일 동작 (`attachEdgeSwipeBack`)
 - 상단 요약 카드 (`.stats-summary` glass-card, 4컬럼 구분선): **오늘 / 최고 / 완료 / 연속** — 외부 home-stats 순서와 일치. 각 셀에 SVG 아이콘 (bar / clock / trophy / flame), 색상 `#94a4ba` (외부 home-stat 톤과 통일)
 - 사이즈별 카드 리스트 (`.stats-size-card`): 최단(시간·이동), 평균(시간·이동), 완료(clears/attempts)
   - 표시 대상 = `best` 키 ∪ `stats` 키 (한 번이라도 attempt 또는 clear가 있는 사이즈), 오름차순. 비어있으면 안내 문구.
@@ -206,8 +206,7 @@ backdrop-filter: blur(18px) saturate(150%);
 - 화살표: `tryMoveByDirection(dir)`
   - ↑ : 빈칸의 아래쪽 타일이 위로 (= 빈칸이 아래로 이동)
   - ↓ ← → 동일
-- 스와이프: `pointerdown`/`pointerup` 좌표 차. **threshold 10px + 한 축 dominance** (`major > minor × 1.3`) — 살짝 드래그도 방향 인식, 미세 떨림은 제외
-- 스와이프 발화 직후 250ms 동안 타일 click 무시 (`suppressClickUntil`) — touchend 후 자동 발화되는 click과의 **중복 이동 방지**
+- 스와이프: `pointerdown`/`pointerup` 좌표 차, threshold 24px, 큰 축으로 방향 결정
 - ⌘/Ctrl+Z: 되돌리기
 
 ### 되돌리기

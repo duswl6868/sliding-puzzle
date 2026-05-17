@@ -508,7 +508,7 @@
     color: white;
   }
   .infinity-thumb svg { width: clamp(24px, 8vw, 32px); height: clamp(16px, 5.4vw, 22px); }
-  .home-stats { margin: clamp(20px, 6vw, 46px) 0 0; border-radius: 20px; min-height: clamp(78px, 20vw, 104px); display:grid; grid-template-columns: repeat(3,1fr); overflow:hidden; cursor: pointer; transition: transform 100ms var(--ease); }
+  .home-stats { margin: clamp(20px, 6vw, 46px) 0 0; border: 0; padding: 0; font: inherit; color: inherit; text-align: inherit; border-radius: 20px; min-height: clamp(78px, 20vw, 104px); display:grid; grid-template-columns: repeat(3,1fr); overflow:hidden; cursor: pointer; transition: transform 100ms var(--ease); width: 100%; }
   .home-stats:active { transform: scale(.985); }
   .home-stat { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; position:relative; padding: 8px 6px; }
   .home-stat + .home-stat::before { content:""; position:absolute; left:0; top:18%; bottom:18%; width:1px; background: var(--line); }
@@ -699,11 +699,11 @@
         <button class="difficulty-card glass-card" id="photoCard"><div><div class="label">내 사진 퍼즐</div><div class="sub">사진을 골라 직접 만들기</div></div><div class="photo-thumb" id="photoThumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5h-5L7.5 7.5H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2.5L14.5 5z"/><circle cx="12" cy="13" r="3.2"/></svg></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       </div>
       <input type="file" id="photoInput" accept="image/*" style="display:none" />
-      <div class="home-stats glass-card" id="homeStatsCard" role="button" tabindex="0" aria-label="통계 보기">
+      <button class="home-stats glass-card" id="homeStatsCard" type="button" aria-label="통계 보기">
         <div class="home-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 20V10"/><path d="M10 20V5"/><path d="M15 20v-8"/><path d="M20 20V8"/></svg><div class="cap">오늘 플레이</div><div class="val" id="todayCount">0</div></div>
         <div class="home-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg><div class="cap">최고 기록</div><div class="val" id="bestTime">--:--</div></div>
         <div class="home-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg><div class="cap">완료</div><div class="val" id="completeCount">0</div></div>
-      </div>
+      </button>
     </section>
   </main>
 
@@ -1075,11 +1075,7 @@
         numEl.textContent = String(val);
         el.appendChild(numEl);
       }
-      if (!solved) el.addEventListener('click', () => {
-        // 직전 스와이프가 이미 이동을 처리했으면 click 무시 — 한 번 스와이프에 두 칸 이동 방지
-        if (performance.now() < suppressClickUntil) return;
-        tryTapTile(val);
-      });
+      if (!solved) el.addEventListener('click', () => tryTapTile(val));
       target.appendChild(el);
     }
     if (!solved) { tiles[N - 1] = 0; emptyPos = N - 1; layout(false); sizeFonts(); }
@@ -1576,9 +1572,8 @@
   $('settingsBtn').addEventListener('click', () => alert('설정은 다음 버전에서 연결하면 됩니다.'));
   // 데일리 챌린지 진입 placeholder (동작은 후속)
   $('dailyCard').addEventListener('click', () => alert('데일리 챌린지 — 곧 추가 예정'));
-  // 통계 진입 — 홈 하단 home-stats 카드 클릭
+  // 통계 진입 — 홈 하단 home-stats 카드 클릭 (native button이라 키보드 Enter/Space 자동 처리)
   $('homeStatsCard').addEventListener('click', openStats);
-  $('homeStatsCard').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openStats(); } });
   $('statsBackBtn').addEventListener('click', () => { show(homeScreen); renderHomeStats(); });
   $('statsResetBtn').addEventListener('click', resetStats);
 
@@ -1589,20 +1584,12 @@
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); }
   });
   let touchStart = null;
-  // 스와이프 발화 후 잠시 click을 무시 (touchend → click 자동 발화로 인한 중복 이동 방지)
-  let suppressClickUntil = 0;
   boardEl.addEventListener('pointerdown', (e) => { if (e.pointerType === 'touch') touchStart = { x: e.clientX, y: e.clientY }; });
   boardEl.addEventListener('pointerup', (e) => {
     if (e.pointerType !== 'touch' || !touchStart) return;
     const dx = e.clientX - touchStart.x, dy = e.clientY - touchStart.y;
     const ax = Math.abs(dx), ay = Math.abs(dy);
-    const major = Math.max(ax, ay);
-    const minor = Math.min(ax, ay);
-    // 임계값 10px + 한 축이 다른 축의 1.3배 이상(방향 분명) — 살짝 드래그도 인식하되 미세 떨림은 제외
-    if (major >= 10 && major > minor * 1.3) {
-      tryMoveByDirection(ax > ay ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
-      suppressClickUntil = performance.now() + 250;
-    }
+    if (Math.max(ax, ay) >= 24) tryMoveByDirection(ax > ay ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
     touchStart = null;
   });
   let resizeRaf = null;
