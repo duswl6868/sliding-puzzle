@@ -508,6 +508,62 @@
     color: white;
   }
   .infinity-thumb svg { width: clamp(24px, 8vw, 32px); height: clamp(16px, 5.4vw, 22px); }
+  .stages-thumb {
+    width: clamp(42px, 12vw, 55px);
+    height: clamp(42px, 12vw, 55px);
+    display: grid; place-items: center;
+    border-radius: 14px;
+    justify-self: center;
+    background: linear-gradient(180deg, #ffd66b 0%, #f5a623 100%);
+    border: 1px solid rgba(255,255,255,.68);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.52),
+      0 8px 16px rgba(214,158,40,.30),
+      0 0 0 2px rgba(245,166,35,.08);
+    color: #fff;
+  }
+  .stages-thumb svg { width: clamp(22px, 7vw, 28px); height: clamp(22px, 7vw, 28px); fill: rgba(255,255,255,.18); }
+  /* 스테이지 선택 페이지 */
+  #stagesScreen .topbar { display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; margin-bottom: clamp(14px, 4vw, 18px); }
+  #stagesScreen .center-title { font-size: clamp(17px, 5vw, 21px); }
+  .stage-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(10px, 2.6vw, 14px);
+  }
+  .stage-card {
+    aspect-ratio: 1;
+    border: 1px solid rgba(255,255,255,.72);
+    border-radius: 14px;
+    background: linear-gradient(145deg, rgba(255,255,255,.76), rgba(255,255,255,.42));
+    box-shadow: 0 6px 14px rgba(35,55,90,.07);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    backdrop-filter: blur(14px) saturate(150%);
+    display: grid; place-items: center;
+    font-family: inherit;
+    padding: 0;
+    cursor: pointer;
+    transition: transform 90ms var(--ease);
+  }
+  .stage-card:not(.locked):active { transform: scale(.96); }
+  .stage-card .num {
+    font-size: clamp(18px, 5vw, 22px);
+    font-weight: 800;
+    color: var(--blue);
+    font-variant-numeric: tabular-nums;
+  }
+  .stage-card.locked {
+    background: rgba(180,190,205,.22);
+    border-color: rgba(180,190,205,.20);
+    box-shadow: none;
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    cursor: default;
+  }
+  .stage-card.locked .lock-icon {
+    width: clamp(18px, 5vw, 22px);
+    height: clamp(18px, 5vw, 22px);
+    color: #e5b53a;
+  }
   .home-stats { margin: clamp(20px, 6vw, 46px) 0 0; border: 0; padding: 0; font: inherit; color: inherit; text-align: inherit; border-radius: 20px; min-height: clamp(78px, 20vw, 104px); display:grid; grid-template-columns: repeat(3,1fr); overflow:hidden; cursor: pointer; transition: transform 100ms var(--ease); width: 100%; }
   .home-stats:active { transform: scale(.985); }
   .home-stat { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; position:relative; padding: 8px 6px; }
@@ -733,7 +789,7 @@
       </button>
       <div class="difficulty-list">
         <button class="difficulty-card glass-card" data-size="3"><div><div class="label">3 × 3</div><div class="sub">8 퍼즐</div></div><div class="mini-grid g3"><span></span><span></span><span></span><span></span><span class="hot"></span><span></span><span></span><span></span><span></span></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-        <button class="difficulty-card glass-card" data-size="4"><div><div class="label">4 × 4</div><div class="sub">15 퍼즐</div></div><div class="mini-grid g4"><span></span><span></span><span></span><span></span><span></span><span class="hot"></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        <button class="difficulty-card glass-card" id="stagesCard"><div><div class="label">스테이지 퍼즐</div><div class="sub">1탄부터 30탄까지</div></div><div class="stages-thumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
         <button class="difficulty-card glass-card" id="infiniteCard"><div><div class="label">무한의 퍼즐</div><div class="sub">3×3부터 끝없이 도전</div></div><div class="infinity-thumb"><svg viewBox="0 0 32 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 4c5.5 0 5.5 16 0 16-6 0-9-16-15-16-4.5 0-4.5 16 0 16 6 0 9-16 15-16z"/></svg></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
         <button class="difficulty-card glass-card" id="photoCard"><div><div class="label">내 사진 퍼즐</div><div class="sub">사진을 골라 직접 만들기</div></div><div class="photo-thumb" id="photoThumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5h-5L7.5 7.5H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-2.5L14.5 5z"/><circle cx="12" cy="13" r="3.2"/></svg></div><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       </div>
@@ -773,6 +829,15 @@
     <section class="win-head"><span class="best-badge" id="bestBadge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v4a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3v2a3 3 0 0 1-3 3"/><path d="M7 5H4v2a3 3 0 0 0 3 3"/></svg>NEW RECORD</span><h2>완성!</h2><p><b id="winTime">00:00</b><span>|</span><b id="winMoves">0 이동</b></p><p class="best-delta" id="bestDelta"></p></section>
     <div class="board-wrap"><div class="board" id="winBoard" aria-hidden="true"></div></div>
     <div class="win-actions"><button class="primary-cta" id="againBtn">다시 플레이</button><button class="secondary-cta" id="retryBtn" style="display:none">다시하기</button><button class="link-btn" id="homeBtn">메인으로</button></div>
+  </main>
+
+  <main class="screen" id="stagesScreen">
+    <header class="topbar">
+      <button class="icon-btn" id="stagesBackBtn" aria-label="뒤로"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="center-title"><span>스테이지</span></div>
+      <span></span>
+    </header>
+    <div class="stage-grid" id="stageGrid"></div>
   </main>
 
   <main class="screen" id="statsScreen">
@@ -884,6 +949,7 @@
   const playScreen = $('playScreen');
   const winScreen = $('winScreen');
   const statsScreen = $('statsScreen');
+  const stagesScreen = $('stagesScreen');
   const boardEl = $('board');
   const winBoardEl = $('winBoard');
   const timeEl = $('time');
@@ -1064,6 +1130,37 @@
     }
   }
   function openStats() { renderStats(); show(statsScreen); }
+  // 스테이지 페이지 — 1탄~30탄 4열 그리드. 1탄만 활성, 나머지는 잠금(노란 자물쇠).
+  const TOTAL_STAGES = 30;
+  function renderStages() {
+    const grid = $('stageGrid');
+    grid.innerHTML = '';
+    for (let i = 1; i <= TOTAL_STAGES; i++) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const locked = i !== 1;
+      btn.className = 'stage-card' + (locked ? ' locked' : '');
+      btn.disabled = locked;
+      btn.setAttribute('aria-label', locked ? `스테이지 ${i} (잠김)` : `스테이지 ${i}`);
+      if (locked) {
+        btn.innerHTML = '<svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+      } else {
+        const num = document.createElement('span');
+        num.className = 'num';
+        num.textContent = String(i);
+        btn.appendChild(num);
+        btn.addEventListener('click', () => pickStage(i));
+      }
+      grid.appendChild(btn);
+    }
+  }
+  function pickStage(n) {
+    if (n !== 1) return; // 잠금 (후속: 클리어로 단계 해금)
+    imageMode = false; currentImage = null; infiniteMode = false;
+    // 1탄 = 4×4 (잠정. 후속에 스테이지별 사이즈/룰 분기)
+    startGame(4);
+  }
+  function openStages() { renderStages(); show(stagesScreen); }
   function resetStats() {
     if (!confirm('모든 통계 기록을 초기화합니다. 되돌릴 수 없어요. 계속할까요?')) return;
     saveLS(defaultStore());
@@ -1072,7 +1169,7 @@
   }
 
   function show(screen) {
-    [homeScreen, playScreen, winScreen, statsScreen].forEach(el => el.classList.remove('active'));
+    [homeScreen, playScreen, winScreen, statsScreen, stagesScreen].forEach(el => el.classList.remove('active'));
     screen.classList.add('active');
     requestAnimationFrame(() => {
       sizeFonts();
@@ -1574,6 +1671,7 @@
     goHome();
   });
   attachEdgeSwipeBack(statsScreen, () => { show(homeScreen); renderHomeStats(); });
+  attachEdgeSwipeBack(stagesScreen, () => show(homeScreen));
   $('newGame').addEventListener('click', () => shuffle(true));
   $('shuffleBtn').addEventListener('click', () => { pulse($('shuffleBtn')); shuffle(true); });
   undoBtn.addEventListener('click', () => { pulse(undoBtn); undo(); });
@@ -1655,6 +1753,9 @@
   $('homeStatsCard').addEventListener('click', openStats);
   $('statsBackBtn').addEventListener('click', () => { show(homeScreen); renderHomeStats(); });
   $('statsResetBtn').addEventListener('click', resetStats);
+  // 스테이지 진입 — 홈 카드 클릭
+  $('stagesCard').addEventListener('click', openStages);
+  $('stagesBackBtn').addEventListener('click', () => show(homeScreen));
 
   document.addEventListener('keydown', (e) => {
     if (!playScreen.classList.contains('active')) return;
